@@ -1,4 +1,4 @@
-> Internship M2 project at TIMC / MAGe Grenoble (January - June 2024)
+> PhD project at TIMC / MAGe Grenoble (September 2024 - )
 
 # Interactome-TIMC
 

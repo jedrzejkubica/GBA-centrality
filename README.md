@@ -1,4 +1,4 @@
-TIMC / MAGe Grenoble (September 2024 - )
+TIMC / MAGe Grenoble
 
 # Interactome-TIMC
 

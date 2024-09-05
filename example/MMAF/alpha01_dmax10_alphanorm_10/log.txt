@@ -1,0 +1,30 @@
+/home/kubicaj/python_venvs/pyEnv_PPI/lib64/python3.9/site-packages/networkx/utils/backends.py:135: RuntimeWarning: networkx backend defined more than once: nx-loopback
+  backends.update(_get_backends("networkx.backends"))
+2024-06-07 13:21:11 INFO newCentrality.py: Parsing interactome
+2024-06-07 13:21:12 INFO utils: built non-redundant network from 89328 non-self interactions, resulting in 89319 edges between 14393 nodes
+2024-06-07 13:21:12 INFO newCentrality.py: Parsing gene-to-ENSG mapping
+2024-06-07 13:21:12 WARNING utils: gene LINC01505 mapped to multiple ENSGs, keeping the first == ENSG00000234229
+2024-06-07 13:21:12 WARNING utils: gene ITFG2-AS1 mapped to multiple ENSGs, keeping the first == ENSG00000256150
+2024-06-07 13:21:12 WARNING utils: gene LINC01238 mapped to multiple ENSGs, keeping the first == ENSG00000237940
+2024-06-07 13:21:12 WARNING utils: gene GOLGA8M mapped to multiple ENSGs, keeping the first == ENSG00000188626
+2024-06-07 13:21:12 WARNING utils: gene TMSB15B mapped to multiple ENSGs, keeping the first == ENSG00000158427
+2024-06-07 13:21:12 WARNING utils: gene POLR2J4 mapped to multiple ENSGs, keeping the first == ENSG00000214783
+2024-06-07 13:21:12 WARNING utils: gene MATR3 mapped to multiple ENSGs, keeping the first == ENSG00000015479
+2024-06-07 13:21:12 INFO newCentrality.py: Parsing causal genes
+2024-06-07 13:21:12 WARNING utils: causal gene AK7 == ENSG00000140057 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CCDC39 == ENSG00000145075 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP251 is not in gene2ENSG, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP43 == ENSG00000197748 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP52 == ENSG00000166596 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP61 == ENSG00000089101 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP70 == ENSG00000156042 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene CFAP91 is not in gene2ENSG, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene DNAH2 == ENSG00000183914 is not in interactome, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene DNAI3 is not in gene2ENSG, skipping it
+2024-06-07 13:21:12 WARNING utils: causal gene TCTE1 == ENSG00000146221 is not in interactome, skipping it
+2024-06-07 13:21:12 INFO utils: found 41 causal genes with known ENSG for pathology MMAF
+2024-06-07 13:21:12 INFO newCentrality.py: Calculating powers of adjacency matrix
+2024-06-07 13:23:03 DEBUG newCentrality.py: Done building 10 matrices
+2024-06-07 13:23:03 INFO newCentrality.py: Calculating scores
+2024-06-07 13:23:07 INFO newCentrality.py: Printing scores
+2024-06-07 13:23:07 INFO newCentrality.py: Done!

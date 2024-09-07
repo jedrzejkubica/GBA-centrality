@@ -37,10 +37,6 @@ Download Uniprot data
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 ```
 
-```
-gunzip -c uniprot_sprot.dat.gz
-```
-
 Download PPI data from BioGRID
 
 ```
@@ -73,7 +69,7 @@ wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.int
 Parse Uniprot
 
 ```
-python scripts/Uniprot_parser.py > Uniprot_output.tsv
+gunzip -c uniprot_sprot.dat.gz | python scripts/Uniprot_parser.py > Uniprot_output.tsv
 ```
 
 Parse BioGRID

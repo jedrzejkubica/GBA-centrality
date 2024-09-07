@@ -104,7 +104,7 @@ Then build the interactome:
 python scripts/Build_Interactome.py \
   --inExpFile Exp_Biogrid.tsv Exp_Intact.tsv Exp_Reactome.tsv \
   --inUniProt Uniprot_output.tsv \
-  --inCanonicalFile canonicalGenes.tsv > Interactome_human.tsv
+  --inCanonicalFile canonicalGenes.tsv > Interactome_human.sif
 ```
 > [!NOTE]
 > We provide an example human interactome in [input/Interactome_human.sif](input/Interactome_human.sif) (with 14,393 proteins and 89,319 interactions).

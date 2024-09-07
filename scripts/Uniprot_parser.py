@@ -48,7 +48,7 @@ def uniprot_parser(UniProtinFile):
     # Compiling all the regular expressions
 
     # Accession Numbers (AC), strip trailing ';'
-    re_AC = re.compile('^AC\s+(\S.*);$')
+    re_AC = re.compile(r'^AC\s+(\S.*);$')
 
     # Gene Name/Synonyms from the GN line
     # the below regex pattern ends with either ; or , because 
@@ -60,18 +60,18 @@ def uniprot_parser(UniProtinFile):
     # Sometimes, GN lines can also start just with 'Synonyms'
     # Ex:
     # GN   Synonyms=AO {ECO:0000303|PubMed:27255930}
-    re_GN = re.compile('^GN\s+((Name=\S.*)|(Synonyms=\S.*))[,;]$')
+    re_GN = re.compile(r'^GN\s+((Name=\S.*)|(Synonyms=\S.*))[,;]$')
 
     # Organism (TaxID) from the OX line; some lines violate the uniprot spec
     # Grab only TaxID even if additional info comes after the TaxID
     # eg NCBI_TaxID=32201 {ECO:0000312|EMBL:ABW86978.1};
-    re_TaxID = re.compile('^OX\s+NCBI_TaxID=(\d+)[; ]')
+    re_TaxID = re.compile(r'^OX\s+NCBI_TaxID=(\d+)[; ]')
 
     # Ensembl transcripts and Genes from the DR line
-    re_ENS = re.compile('^DR\s+Ensembl; (\w+).*; \S+; (\w+).*\.')
+    re_ENS = re.compile(r'^DR\s+Ensembl; (\w+).*; \S+; (\w+).*\.')
 
     # GeneIDs from the DR line
-    re_GID = re.compile('^DR\s+GeneID;\s+(\d+);')
+    re_GID = re.compile(r'^DR\s+GeneID;\s+(\d+);')
 
     # Data lines
     for line in UniProtinFile:
@@ -104,8 +104,8 @@ def uniprot_parser(UniProtinFile):
                 if GNList:
                     for geneinfo in GNList:
                         # Retrieving only the Gene Name
-                        if re.match('^Name=(\S.*)', geneinfo):
-                            GeneNameD = re.match('^Name=(\S.*)', geneinfo).group(1)
+                        if re.match(r'^Name=(\S.*)', geneinfo):
+                            GeneNameD = re.match(r'^Name=(\S.*)', geneinfo).group(1)
                             # Sometimes, Gene Name can contain additional info
                             # such as pubmed and other accession IDs
                             # So, we want eliminate these from our
@@ -127,8 +127,8 @@ def uniprot_parser(UniProtinFile):
                             if not GeneName in GeneNames:
                                 GeneNames.append(GeneName)   
                         # retreiving synonyms for Gene Name (if it exists)            
-                        if re.match('^Synonyms=(\S.*)', geneinfo):
-                            GeneSynoinfo = re.match('^Synonyms=(\S.*)', geneinfo).group(1)
+                        if re.match(r'^Synonyms=(\S.*)', geneinfo):
+                            GeneSynoinfo = re.match(r'^Synonyms=(\S.*)', geneinfo).group(1)
                             GeneSynonyms = []
                             # There can be multiple synonyms seperated by a ','
                             # Ex: 
@@ -173,8 +173,8 @@ def uniprot_parser(UniProtinFile):
             except:
                 # if the GN line contains only the Gene name, we do not split 
                 # Ex: GN   Name=APOM; 
-                if re.match('^Name=(\S.*)', GNLine):
-                    GeneNameD = re.match('^Name=(\S+)', GNLine).group(1)
+                if re.match(r'^Name=(\S.*)', GNLine):
+                    GeneNameD = re.match(r'^Name=(\S+)', GNLine).group(1)
                     try:
                         # When Gene Name contains additional info
                         GeneNamewithAcID = GeneNameD.split(' {')

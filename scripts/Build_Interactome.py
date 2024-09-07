@@ -376,11 +376,11 @@ def getHubProteins(ProtA_dict, ProtB_dict):
 #
 # Maps the UniProt Primary Accessions to ENSG
 #
-# Prints to STDOUT in .tsv format
+# Prints to STDOUT in SIF format
 # Output consists of 2 columns:
 # - ENSG of Protein A
+# - Edge "pp" for "protein-protein"
 # - ENSG of Protein B
-# - Edge Weight = 1
 def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
@@ -397,7 +397,7 @@ def Interactome_Uniprot2ENSG(args):
         else:
             # Get the ENSG for the UniProt Primary Accessions
             if data[0] in Uniprot_ENSG_dict.keys() and data[1] in Uniprot_ENSG_dict.keys():
-                ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), Uniprot_ENSG_dict.get(data[1]), str(1))
+                ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), "pp", Uniprot_ENSG_dict.get(data[1]))
                 print('\t'.join(ENSG_Interactome_out))
 
     logging.info("ALL DONE, completed successfully!")
@@ -415,10 +415,10 @@ Program: Parses the output file(s) produced by the interaction_parser.py to prod
          interactome, maps the UniProt Primary Accession of interacting proteins to ENSG using the
          Canonical transcripts file and prints to STDOUT
 --------------------------------------------------------------------------------------------------
-The output (High-quality Human Interactome) consists of five columns in .tsv format:
+The output (High-quality Human Interactome) consists of five columns in SIF format:
   -> ENSG of Protein A
+  -> Edge "pp" for "protein-protein"
   -> ENSG of Protein B
-  -> Edge Weight = 1
 --------------------------------------------------------------------------------------------------
 
 Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes

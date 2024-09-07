@@ -37,10 +37,6 @@ Download Uniprot data
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 ```
 
-```
-gunzip -c uniprot_sprot.dat.gz
-```
-
 Download PPI data from BioGRID
 
 ```
@@ -73,7 +69,7 @@ wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.int
 Parse Uniprot
 
 ```
-python scripts/Uniprot_parser.py > Uniprot_output.tsv
+gunzip -c uniprot_sprot.dat.gz | python scripts/Uniprot_parser.py > Uniprot_output.tsv
 ```
 
 Parse BioGRID
@@ -108,7 +104,7 @@ Then build the interactome:
 python scripts/Build_Interactome.py \
   --inExpFile Exp_Biogrid.tsv Exp_Intact.tsv Exp_Reactome.tsv \
   --inUniProt Uniprot_output.tsv \
-  --inCanonicalFile canonicalGenes.tsv > Interactome_human.tsv
+  --inCanonicalFile canonicalGenes.tsv > Interactome_human.sif
 ```
 > [!NOTE]
 > We provide an example human interactome in [input/Interactome_human.sif](input/Interactome_human.sif) (with 14,393 proteins and 89,319 interactions).

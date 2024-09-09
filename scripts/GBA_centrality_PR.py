@@ -75,58 +75,38 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 
 def get_adjacency_matrices(interactome, d_max=5):
     '''
-    Calculates powers of adjacency matrix.
+    Calculates powers of adjacency matrix up to power d_max. Then zeroes the diagonal.
+    Then normalizes it (row-wise).
 
     arguments:
     - interactome: type=networkx.Graph
     - d_max: int
 
     returns:
-    - adjacency_matrices: list of scipy sparse arrays, array at index i (starting at i==1)
-      is A**i (except the diagonal is zeroed) where A is the adjacency matrix of interactome,
-      rows and columns are ordered as in interactome.nodes()
+    - adjacency_matrices: list of 2D numpy arrays, array at index i (starting at i==1)
+      is the processed A**i, rows and columns are ordered as in interactome.nodes()
     '''
     # initialize, element at index 0 is never used
     adjacency_matrices = [0]
 
-    A = networkx.to_scipy_sparse_array(interactome, dtype=bool)  # returns scipy.sparse._csr.csr_array
-    res = A
-    # manually zero only the non-zero diagonal elements: this is identical to res.setdiag(0)
-    # but faster and doesn't emit a warning (https://github.com/scipy/scipy/issues/11600)
-    nonzero, = res.diagonal().nonzero()
-    res[nonzero, nonzero] = 0
-    res_norm = res
+    A = networkx.to_numpy_array(interactome, dtype=bool)  # returns numpy.array
 
-    # row-wise normalization
-    for i in range(res.shape[0]):
-        # Scipy have not implemented array slicing as of 9/09/2024
-        # use res[[i], :] instead of res[i, :]
-        row_sum = numpy.sum(res[[i], :])
-        for j in range(res.shape[1]):
-            if res_norm[i, j] == 0:
-                continue
-            res_norm[i, j] = int(res[i, j]) / row_sum
+    # temporary variable for boolean A**power
+    res = numpy.identity(A.shape[0], dtype=bool)
 
-    adjacency_matrices.append(res_norm)
+    for power in range(1, d_max + 1):
+        logger.debug(f"Calculating A**{power}")
+        # @ - matrix multiplication
+        res @= A
 
-    # @ - matrix multiplication
-    for power in range(2, d_max + 1):
-        logger.info(f"Calculating A**{power}")
-        res = res @ A
-        res_norm = res
-        # again, same as res.setdiag(0) but faster and quiet
-        nonzero, = res.diagonal().nonzero()
-        res[nonzero, nonzero] = 0
+        res_norm = res.astype(numpy.float32)
+        numpy.fill_diagonal(res_norm, val=0)
 
         # row-wise normalization
-        for i in range(res.shape[0]):
-            # Scipy have not implemented array slicing as of 9/09/2024
-            # use res[[i], :] instead of res[i, :]
-            row_sum = numpy.sum(res[[i], :])
-            for j in range(res.shape[1]):
-                if res_norm[i, j] == 0:
-                    continue
-                res_norm[i, j] = int(res[i, j]) / row_sum
+        row_sum = res_norm.sum(axis=1)
+        row_sum[row_sum==0] = 1
+        res_norm_T = res_norm.T
+        res_norm_T /= row_sum
 
         adjacency_matrices.append(res_norm)
 

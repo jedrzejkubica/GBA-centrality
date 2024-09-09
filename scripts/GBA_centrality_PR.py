@@ -107,7 +107,6 @@ def get_adjacency_matrices(interactome, d_max=5):
         row_sum[row_sum==0] = 1
         res_norm_T = res_norm.T
         res_norm_T /= row_sum
-        # git test
 
         adjacency_matrices.append(res_norm)
 

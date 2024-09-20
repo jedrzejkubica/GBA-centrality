@@ -6,12 +6,11 @@ import pathlib
 
 import argparse
 
-sys.path.append("../scripts")
-import GBA_centrality
+import GBA_centrality_PR
 import utils
 
 
-def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha, alpha_norm):
+def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
     '''
     arguments:
     - interactome: type=networkx.Graph
@@ -28,14 +27,14 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha, alpha_no
     for left_out in list(causal_genes.keys()):
         logger.info("Leaving out %s", left_out)
         del causal_genes[left_out]
-        scores = GBA_centrality.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha, alpha_norm)
+        scores = GBA_centrality_PR.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
         scores_left_out[left_out] = scores[left_out]
         causal_genes[left_out] = 1
 
     return scores_left_out 
 
 
-def main(interactome_file, causal_genes_file, gene2ENSG_file, patho, alpha, alpha_norm, d_max):
+def main(interactome_file, causal_genes_file, gene2ENSG_file, patho, alpha, d_max):
 
     logger.info("Parsing interactome")
     interactome = utils.parse_interactome(interactome_file)
@@ -47,10 +46,10 @@ def main(interactome_file, causal_genes_file, gene2ENSG_file, patho, alpha, alph
     causal_genes = utils.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
 
     logger.info("Calculating powers of adjacency matrix")
-    adjacency_matrices = GBA_centrality.get_adjacency_matrices(interactome, d_max)
+    adjacency_matrices = GBA_centrality_PR.get_adjacency_matrices(interactome, d_max)
 
     logger.info("Calculating leave-one-out scores")
-    scores = leave_one_out(interactome, adjacency_matrices, causal_genes, alpha, alpha_norm)
+    scores = leave_one_out(interactome, adjacency_matrices, causal_genes, alpha)
 
     logger.info("Printing leave-one-out scores")
     utils.scores_to_TSV(scores, ENSG2gene)
@@ -77,7 +76,6 @@ if __name__ == "__main__":
     parser.add_argument('--gene2ENSG_file', type=pathlib.Path, required=True)
     parser.add_argument('--patho', default='MMAF', type=str)
     parser.add_argument('--alpha', default=0.5, type=float)
-    parser.add_argument('--alpha_norm', default=1.0, type=float)
     parser.add_argument('--d_max', default=5, type=int) 
 
     args = parser.parse_args()
@@ -88,7 +86,6 @@ if __name__ == "__main__":
              gene2ENSG_file=args.gene2ENSG_file,
              patho=args.patho,
              alpha=args.alpha,
-             alpha_norm=args.alpha_norm,
              d_max=args.d_max)
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

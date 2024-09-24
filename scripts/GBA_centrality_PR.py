@@ -110,7 +110,7 @@ def get_adjacency_matrices(interactome, d_max=5):
         row_sum = res_norm.sum(axis=1)
         row_sum[row_sum == 0] = 1
         res_norm_T = res_norm.T
-        res_norm_T /= row_sum
+        res_norm_T = res_norm_T / row_sum
 
         adjacency_matrices.append(res_norm)
 

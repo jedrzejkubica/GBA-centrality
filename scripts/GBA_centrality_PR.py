@@ -83,28 +83,32 @@ def get_adjacency_matrices(interactome, d_max=5):
     - d_max: int
 
     returns:
-    - adjacency_matrices: list of 2D numpy arrays, array at index i (starting at i==1)
+    - adjacency_matrices: list of 2D scipy sparse arrays, array at index i (starting at i==1)
       is the processed A**i, rows and columns are ordered as in interactome.nodes()
     '''
     # initialize, element at index 0 is never used
     adjacency_matrices = [0]
 
-    A = networkx.to_numpy_array(interactome, dtype=bool)  # returns numpy.array
+    # res in CSR format and A in CSC format, so res @ A should be optimal
+    A = networkx.to_scipy_sparse_array(interactome, dtype=bool, format='csc')
 
     # temporary variable for boolean A**power
     res = numpy.identity(A.shape[0], dtype=bool)
 
     for power in range(1, d_max + 1):
         logger.debug(f"Calculating A**{power}")
-        # @ - matrix multiplication
-        res @= A
+        # @ - matrix multiplication, result of CSR @ CSC is CSR as desired
+        res = res @ A
 
-        res_norm = res.astype(numpy.float32)
-        numpy.fill_diagonal(res_norm, val=0)
+        # manually zero only the non-zero diagonal elements: this is identical to res.setdiag(0)
+        # but faster and doesn't emit a warning (https://github.com/scipy/scipy/issues/11600)
+        nonzero, = res.diagonal().nonzero()
+        res[nonzero, nonzero] = 0
 
         # row-wise normalization
+        res_norm = res.astype(numpy.float32)
         row_sum = res_norm.sum(axis=1)
-        row_sum[row_sum==0] = 1
+        row_sum[row_sum == 0] = 1
         res_norm_T = res_norm.T
         res_norm_T /= row_sum
 

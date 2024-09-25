@@ -90,10 +90,10 @@ def get_adjacency_matrices(interactome, d_max=5):
     adjacency_matrices = [0]
 
     # res in CSR format and A in CSC format, so res @ A should be optimal
-    A = networkx.to_scipy_sparse_array(interactome, dtype=bool, format='csc')
+    A = networkx.to_scipy_sparse_array(interactome, dtype=numpy.int8, format='csc')
 
     # temporary variable for boolean A**power
-    res = numpy.identity(A.shape[0], dtype=bool)
+    res = numpy.identity(A.shape[0], dtype=numpy.int8)
 
     for power in range(1, d_max + 1):
         logger.debug(f"Calculating A**{power}")
@@ -110,7 +110,7 @@ def get_adjacency_matrices(interactome, d_max=5):
         row_sum = res_norm.sum(axis=1)
         row_sum[row_sum == 0] = 1
         res_norm_T = res_norm.T
-        res_norm_T = res_norm_T / row_sum
+        res_norm_T /= row_sum
 
         adjacency_matrices.append(res_norm)
 

@@ -37,16 +37,14 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
     Calculates scores for every gene in the interactome based on the proximity to causal genes.
     Formula (for each node i):
     {
-    score_i = 1 ; if gene is causal
-    TODO
-    score_i = (1/norm_factor) * sum_k(alpha**k) * sum_j[(A**k)_ij * score_j] ; otherwise
+    score_i = sum_k_to_dmax(alpha**k) * sum_j[(A**k)_ij * score_j]
     }
 
     arguments:
     - interactome: type=networkx.Graph
     - adjacency_matrices: list of scipy sparse arrays as returned by get_adjacency_matrices()
     - causal_genes: dict of causal genes with key=ENSG, value=1
-    - alpha
+    - alpha: attenuation parameter
 
     returns:
     - scores: dict with key=ENSG, value=score
@@ -62,7 +60,7 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 
     scores_vec = numpy.zeros(len(causal_genes_vec))
 
-    # calculate normalized scores
+    # calculate scores
     for d in range(1, len(adjacency_matrices)):
         A = adjacency_matrices[d]
         scores_vec += alpha ** d * A.dot(causal_genes_vec)
@@ -75,8 +73,8 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 
 def get_adjacency_matrices(interactome, d_max=5):
     '''
-    Calculates powers of adjacency matrix up to power d_max. Then zeroes the diagonal.
-    Then normalizes it (row-wise).
+    Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices). 
+    Then zeroes the diagonal and normalizes the matrix (row-wise).
 
     arguments:
     - interactome: type=networkx.Graph
@@ -92,7 +90,7 @@ def get_adjacency_matrices(interactome, d_max=5):
     # res in CSR format and A in CSC format, so res @ A should be optimal
     A = networkx.to_scipy_sparse_array(interactome, dtype=numpy.uint64, format='csc')
 
-    # temporary variable for boolean A**power
+    # temporary variable for A**power
     res = numpy.identity(A.shape[0], dtype=numpy.uint64)
 
     for power in range(1, d_max + 1):

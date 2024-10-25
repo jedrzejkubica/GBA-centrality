@@ -397,8 +397,12 @@ def Interactome_Uniprot2ENSG(args):
         else:
             # Get the ENSG for the UniProt Primary Accessions
             if data[0] in Uniprot_ENSG_dict.keys() and data[1] in Uniprot_ENSG_dict.keys():
-                ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), "pp", Uniprot_ENSG_dict.get(data[1]))
-                print('\t'.join(ENSG_Interactome_out))
+                # skip self-loops
+                if Uniprot_ENSG_dict.get(data[0]) == Uniprot_ENSG_dict.get(data[1]):
+                    continue
+                else: 
+                    ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), "pp", Uniprot_ENSG_dict.get(data[1]))
+                    print('\t'.join(ENSG_Interactome_out))
 
     logging.info("ALL DONE, completed successfully!")
 

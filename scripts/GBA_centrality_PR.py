@@ -42,7 +42,7 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 
     arguments:
     - interactome: type=networkx.Graph
-    - adjacency_matrices: list of scipy sparse arrays as returned by get_adjacency_matrices()
+    - adjacency_matrices: list of numpy arrays as returned by get_adjacency_matrices()
     - causal_genes: dict of causal genes with key=ENSG, value=1
     - alpha: attenuation parameter
 
@@ -81,13 +81,12 @@ def get_adjacency_matrices(interactome, d_max=5):
     - d_max: int
 
     returns:
-    - adjacency_matrices: list of 2D scipy sparse arrays, array at index i (starting at i==0)
+    - adjacency_matrices: list of numpy arrays, array at index i (starting at i==0)
       is the processed A**i, rows and columns are ordered as in interactome.nodes()
     '''
     # list of processed matrices, should all be of the same type (eg numpy.float32)
     adjacency_matrices = []
 
-    # res in CSR format and A in CSC format, so res @ A should be optimal
     A = networkx.to_scipy_sparse_array(interactome, dtype=numpy.uint64, format='csc')
 
     # temporary variable for A**power
@@ -96,13 +95,14 @@ def get_adjacency_matrices(interactome, d_max=5):
 
     for power in range(1, d_max + 1):
         logger.debug(f"Calculating A**{power}")
-        # @ - matrix multiplication, result of CSR @ CSC is CSR as desired
+        # @ - matrix multiplication, result of numpy @ CSC is numpy
+        # res in CSR and A in CSC format should be fast, but it is slow,
+        # also res and A in numpy format is very slow,
+        # but res in numpy format and A in CSC format is the fastest
         res = res @ A
 
-        # manually zero only the non-zero diagonal elements: this is identical to res.setdiag(0)
-        # but faster and doesn't emit a warning (https://github.com/scipy/scipy/issues/11600)
-        nonzero, = res.diagonal().nonzero()
-        res[nonzero, nonzero] = 0
+        # zero the diagonal
+        numpy.fill_diagonal(res, val=0)
 
         # row-wise normalization
         res_norm = res.astype(numpy.float32)
@@ -163,9 +163,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # I don't know argparse but you have to make sure the required args were passed,
-    # check that the provided args are OK, and print a USAGE if checks fail
-
     try:
         main(interactome_file=args.interactome_file,
              causal_genes_file=args.causal_genes_file,
@@ -173,7 +170,6 @@ if __name__ == "__main__":
              gene2ENSG_file=args.gene2ENSG_file,
              alpha=args.alpha,
              d_max=args.d_max)
-        # this doesn't work, the default args defined for main() are ignored
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

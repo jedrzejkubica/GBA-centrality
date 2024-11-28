@@ -4,8 +4,8 @@
 # This file was written by Jędrzej Kubica and Nicolas Thierry-Mieg
 # (CNRS, France) Nicolas.Thierry-Mieg@univ-grenoble-alpes.fr
 #
-# This program is free software: you can redistribute it and/or modify it under 
-# the terms of the GNU General Public License as published by the Free Software 
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
@@ -61,7 +61,7 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
     scores_vec = numpy.zeros(len(causal_genes_vec))
 
     # calculate scores
-    for d in range(1, len(adjacency_matrices)):
+    for d in range(0, len(adjacency_matrices)):
         A = adjacency_matrices[d]
         scores_vec += alpha ** d * A.dot(causal_genes_vec)
 
@@ -73,7 +73,7 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 
 def get_adjacency_matrices(interactome, d_max=5):
     '''
-    Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices). 
+    Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices).
     Then zeroes the diagonal and normalizes the matrix (row-wise).
 
     arguments:
@@ -81,17 +81,18 @@ def get_adjacency_matrices(interactome, d_max=5):
     - d_max: int
 
     returns:
-    - adjacency_matrices: list of 2D scipy sparse arrays, array at index i (starting at i==1)
+    - adjacency_matrices: list of 2D scipy sparse arrays, array at index i (starting at i==0)
       is the processed A**i, rows and columns are ordered as in interactome.nodes()
     '''
-    # initialize, element at index 0 is never used
-    adjacency_matrices = [0]
+    # list of processed matrices, should all be of the same type (eg numpy.float32)
+    adjacency_matrices = []
 
     # res in CSR format and A in CSC format, so res @ A should be optimal
     A = networkx.to_scipy_sparse_array(interactome, dtype=numpy.uint64, format='csc')
 
     # temporary variable for A**power
     res = numpy.identity(A.shape[0], dtype=numpy.uint64)
+    adjacency_matrices.append(res.astype(numpy.float32))
 
     for power in range(1, d_max + 1):
         logger.debug(f"Calculating A**{power}")
@@ -112,7 +113,7 @@ def get_adjacency_matrices(interactome, d_max=5):
 
         adjacency_matrices.append(res_norm)
 
-    logger.debug("Done building %i matrices", len(adjacency_matrices) - 1)
+    logger.debug("Done building %i matrices", len(adjacency_matrices))
     return adjacency_matrices
 
 

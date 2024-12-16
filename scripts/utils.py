@@ -129,14 +129,14 @@ def parse_Uniprot(inUniProt):
     - Gene Name (or a comma seperated list of Gene Names)
     
     Returns:
-      - ENSG2Gene: dict with key=ENSG, value=geneName
+      - ENSG2gene: dict with key=ENSG, value=geneName
       - gene2ENSG: dict with key=gene, value=ENSG
       - Uniprot2ENSG: dict with key=Primary accession, value=ENSG
 
     Note: if more than one gene name is associated with a particular ENSG,
           then keeping the first gene name from the list
     '''
-    ENSG2Gene = {}
+    ENSG2gene = {}
     gene2ENSG = {}
     Uniprot2ENSG = {}
 
@@ -176,11 +176,11 @@ def parse_Uniprot(inUniProt):
             logger.warning("%s mapped to multiple gene names %s, keeping the first == %s",
                            ENSG, geneNames_list, geneName)
 
-        ENSG2Gene[ENSG] = geneName
+        ENSG2gene[ENSG] = geneName
         gene2ENSG[geneName] = ENSG
         Uniprot2ENSG[AC_primary] = ENSG
 
-    return ENSG2Gene, gene2ENSG, Uniprot2ENSG
+    return ENSG2gene, gene2ENSG, Uniprot2ENSG
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:

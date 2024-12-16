@@ -118,30 +118,32 @@ def parse_gene2ENSG(gene2ENSG_file):
 
 def parse_Uniprot(inUniProt):
     '''
-    # Parses tab-seperated Uniprot file produced by Uniprot_parser.py
-    # which consists of 7 columns (one record per line):
-    # - Uniprot Primary Accession
-    # - Taxonomy Identifier
-    # - ENST (or a comma seperated list of ENSTs)
-    # - ENSG (or a comma seperated list of ENSGs)
-    # - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
-    # - GeneID (or a comma seperated list of GeneIDs)
-    # - Gene Name (or a comma seperated list of Gene Names)
-    #
-    # Returns:
-    #   - ENSG_Gene_dict: dict with key=ENSG, values=geneName
-    #   - Uniprot_ENSG_dict: dict with key=Primary accession, values=ENSG
+    Parses tab-seperated Uniprot file produced by Uniprot_parser.py
+    which consists of 7 columns (one record per line):
+    - Uniprot Primary Accession
+    - Taxonomy Identifier
+    - ENST (or a comma seperated list of ENSTs)
+    - ENSG (or a comma seperated list of ENSGs)
+    - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
+    - GeneID (or a comma seperated list of GeneIDs)
+    - Gene Name (or a comma seperated list of Gene Names)
+    
+    Returns:
+      - ENSG2Gene: dict with key=ENSG, value=geneName
+      - gene2ENSG: dict with key=gene, value=ENSG
+      - Uniprot2ENSG: dict with key=Primary accession, value=ENSG
 
-    # Note: if more than one gene name is associated with a particular ENSG,
-    #       then keeping the first gene name from the list
+    Note: if more than one gene name is associated with a particular ENSG,
+          then keeping the first gene name from the list
     '''
     ENSG2Gene = {}
+    gene2ENSG = {}
     Uniprot2ENSG = {}
 
     try:
         f = open(inUniProt, 'r')
     except Exception as e:
-        logging.error("Failed to read the Uniprot file: %s" % inUniProt, e)
+        logging.error("Opening provided gene2ENSG file %s: %s", inUniProt, e)
         raise Exception("cannot open provided Uniprot file")
 
     # skip header
@@ -152,13 +154,17 @@ def parse_Uniprot(inUniProt):
 
         # if some records are incomplete, then skip them
         if len(split_line) != 7:
+            logger.error("gene2ENSG file %s has bad line (not 7 tab-separated fields): %s",
+                         inUniProt, line)
             continue
 
         AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
 
         # keep only the first ENSG (if exists in the file)
         if ENSGs == "":
+            logger.warning("%s not in %s", ENSG, inUniProt)
             continue
+
         ENSGs_list = ENSGs.rstrip().split(',')
         ENSG = ENSGs_list[0]
 
@@ -166,11 +172,15 @@ def parse_Uniprot(inUniProt):
         # then keep only the first gene name from the list
         geneNames_list = geneNames.rstrip().split(',')
         geneName = geneNames_list[0]
+        if len(geneNames_list) > 1:
+            logger.warning("%s mapped to multiple gene names %s, keeping the first == %s",
+                           ENSG, geneNames_list, geneName)
 
         ENSG2Gene[ENSG] = geneName
+        gene2ENSG[geneName] = ENSG
         Uniprot2ENSG[AC_primary] = ENSG
 
-    return ENSG2Gene, Uniprot2ENSG
+    return ENSG2Gene, gene2ENSG, Uniprot2ENSG
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:

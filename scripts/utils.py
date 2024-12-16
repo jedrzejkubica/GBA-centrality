@@ -70,7 +70,7 @@ def parse_gene2ENSG(gene2ENSG_file):
     Build dicts mapping ENSGs to gene_names and gene_names to ENSGs
 
     arguments:
-    - gene2ENSG_file: filename (with path) of TSV file mapping gene names to ENSGs, 
+    - Uniprot: filename (with path) of TSV file mapping gene names to ENSGs, 
       type=str with 2 columns: GENE ENSG
 
     returns 2 dicts of all genes in the gene2ENSG_file:
@@ -114,6 +114,63 @@ def parse_gene2ENSG(gene2ENSG_file):
 
     f_gene2ENSG.close()
     return(ENSG2gene, gene2ENSG)
+
+
+def parse_Uniprot(inUniProt):
+    '''
+    # Parses tab-seperated Uniprot file produced by Uniprot_parser.py
+    # which consists of 7 columns (one record per line):
+    # - Uniprot Primary Accession
+    # - Taxonomy Identifier
+    # - ENST (or a comma seperated list of ENSTs)
+    # - ENSG (or a comma seperated list of ENSGs)
+    # - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
+    # - GeneID (or a comma seperated list of GeneIDs)
+    # - Gene Name (or a comma seperated list of Gene Names)
+    #
+    # Returns:
+    #   - ENSG_Gene_dict: dict with key=ENSG, values=geneName
+    #   - Uniprot_ENSG_dict: dict with key=Primary accession, values=ENSG
+
+    # Note: if more than one gene name is associated with a particular ENSG,
+    #       then keeping the first gene name from the list
+    '''
+    ENSG2Gene = {}
+    Uniprot2ENSG = {}
+
+    try:
+        f = open(inUniProt, 'r')
+    except Exception as e:
+        logging.error("Failed to read the Uniprot file: %s" % inUniProt, e)
+        raise Exception("cannot open provided Uniprot file")
+
+    # skip header
+    next(f)
+
+    for line in f:
+        split_line = line.rstrip().split('\t')
+
+        # if some records are incomplete, then skip them
+        if len(split_line) != 7:
+            continue
+
+        AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
+
+        # keep only the first ENSG (if exists in the file)
+        if ENSGs == "":
+            continue
+        ENSGs_list = ENSGs.rstrip().split(',')
+        ENSG = ENSGs_list[0]
+
+        # if more than one gene name is associated with a particular ENSG,
+        # then keep only the first gene name from the list
+        geneNames_list = geneNames.rstrip().split(',')
+        geneName = geneNames_list[0]
+
+        ENSG2Gene[ENSG] = geneName
+        Uniprot2ENSG[AC_primary] = ENSG
+
+    return ENSG2Gene, Uniprot2ENSG
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:

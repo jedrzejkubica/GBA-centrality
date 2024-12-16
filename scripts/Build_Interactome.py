@@ -5,9 +5,11 @@
 # manojmw
 # 27 Jan, 2022
 
-import sys, argparse
+import sys
+import argparse
 import logging
-import gzip
+
+import utils
 
 ###########################################################
 
@@ -124,62 +126,6 @@ def UniProtInteractome(inExpFile):
                 Uniprot_Interactome_list.append(interaction_out_line)
 
     return Uniprot_Interactome_list
-
-###########################################################
-
-# Parses tab-seperated Uniprot file produced by Uniprot_parser.py
-# which consists of 7 columns (one record per line):
-# - Uniprot Primary Accession
-# - Taxonomy Identifier
-# - ENST (or a comma seperated list of ENSTs)
-# - ENSG (or a comma seperated list of ENSGs)
-# - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
-# - GeneID (or a comma seperated list of GeneIDs)
-# - Gene Name (or a comma seperated list of Gene Names)
-#
-# Returns:
-#   - ENSG_Gene_dict: dict with key=ENSG, values=geneName
-#   - Uniprot_ENSG_dict: dict with key=Primary accession, values=ENSG
-
-# Note: if more than one gene name is associated with a particular ENSG,
-#       then keeping the first gene name from the list
-def ParseUniprot(inUniProt):
-    ENSG_Gene_dict = {}
-    Uniprot_ENSG_dict = {}
-
-    try:
-        f = open(inUniProt, 'r')
-    except Exception as e:
-        logging.error("Failed to read the Uniprot file: %s" % inUniProt, e)
-        raise Exception("cannot open provided Uniprot file")
-
-    # skip header
-    next(f)
-
-    for line in f:
-        split_line = line.rstrip().split('\t')
-
-        # if some records are incomplete, then skip them
-        if len(split_line) != 7:
-            continue
-
-        AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
-
-        # keep only the first ENSG (if exists in the file)
-        if ENSGs == "":
-            continue
-        ENSGs_list = ENSGs.rstrip().split(',')
-        ENSG = ENSGs_list[0]
-
-        # if more than one gene name is associated with a particular ENSG,
-        # then keep only the first gene name from the list
-        geneNames_list = geneNames.rstrip().split(',')
-        geneName = geneNames_list[0]
-
-        ENSG_Gene_dict[ENSG] = geneName
-        Uniprot_ENSG_dict[AC_primary] = ENSG
-
-    return ENSG_Gene_dict, Uniprot_ENSG_dict
 
 ###########################################################
 
@@ -303,7 +249,7 @@ def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG_Gene_dict, Uniprot_ENSG_dict = ParseUniprot(args.inUniProt)
+    ENSG_Gene_dict, Uniprot_ENSG_dict = utils.parse_Uniprot(args.inUniProt)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 

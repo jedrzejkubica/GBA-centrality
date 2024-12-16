@@ -112,7 +112,7 @@ def parse_Uniprot(inUniProt):
 
         # keep only the first ENSG (if exists in the file)
         if ENSGs == "":
-            logger.warning("%s not in %s", ENSG, inUniProt)
+            logger.warning("%s has no ENSG in %s", AC_primary, inUniProt)
             continue
 
         ENSGs_list = ENSGs.rstrip().split(',')
@@ -154,8 +154,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
     except Exception as e:
         logger.error("Opening provided causal genes file %s: %s", causal_genes_file, e)
         raise Exception("cannot open provided causal genes file")
-
-    # not sure if there's a header line, assume there isn't
+    
     for line in f_causal:
         split_line = line.rstrip().split('\t')
         if len(split_line) != 2:
@@ -166,9 +165,10 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
 
         if pathology != patho:
             continue
-        elif gene_name in gene2ENSG:
+        
+        if gene_name in gene2ENSG:
             ENSG = gene2ENSG[gene_name]
-            if interactome.has_node(ENSG):
+            if ENSG in interactome:
                 causal_genes[ENSG] = 1
             else:
                 logger.warning("causal gene %s == %s is not in interactome, skipping it",

@@ -249,7 +249,7 @@ def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG_Gene_dict, Uniprot_ENSG_dict = utils.parse_Uniprot(args.inUniProt)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = utils.parse_Uniprot(args.inUniProt)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 
@@ -262,12 +262,12 @@ def Interactome_Uniprot2ENSG(args):
             continue 
         else:
 
-            if (proteinA in Uniprot_ENSG_dict) and (proteinB in Uniprot_ENSG_dict):
+            if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
                 # Removing self-loops
                 if proteinA == proteinB:
                     continue
                 else:
-                    ENSG_Interactome_out = (Uniprot_ENSG_dict[proteinA], "pp", Uniprot_ENSG_dict[proteinB])
+                    ENSG_Interactome_out = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
                     print('\t'.join(ENSG_Interactome_out))
 
     logging.info("ALL DONE, completed successfully!")

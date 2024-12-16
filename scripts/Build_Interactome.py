@@ -137,11 +137,14 @@ def UniProtInteractome(inExpFile):
 # - GeneID (or a comma seperated list of GeneIDs)
 # - Gene Name (or a comma seperated list of Gene Names)
 #
-# Returns a dict: key=ENSG, values=geneName
+# Returns:
+#   - ENSG_Gene_dict: dict with key=ENSG, values=geneName
+#   - Uniprot_ENSG_dict: dict with key=Primary accession, values=ENSG
 # Note: if more than one gene name is associated with a particular ENSG,
 #       then keeping the first gene name from the list
-def ENSG_Gene(inUniProt):
+def ParseUniprot(inUniProt):
     ENSG_Gene_dict = {}
+    Uniprot_ENSG_dict = {}
 
     try:
         f = open(inUniProt, 'r')
@@ -174,82 +177,9 @@ def ENSG_Gene(inUniProt):
 
         ENSG_Gene_dict[ENSG] = geneName
 
-    return ENSG_Gene_dict
+        Uniprot_ENSG_dict[AC_primary] = ENSG
 
-###########################################################
-
-# Parses the tab-seperated UniProt Primary Accession file
-# produced by Uniprot_parser.py
-#
-# Required columns are: 'Primary_AC' and 'ENSGs' (can be in any order,
-# but they MUST exist)
-#
-# Parses the dictionary ENSG_Gene_dict
-# returned by the function ENSG_Gene
-# Maps UniProt Primary Accession to ENSG
-#
-# Returns a dictionary:
-# - Key: UniProt Primary Accession
-# - Value: Corresponding ENSG
-def Uniprot_ENSG(inUniProt, ENSG_Gene_dict):
-
-    # Dictionary for storing UniProt Primary
-    # Accession and ENSG data
-    Uniprot_ENSG_dict = {}
-
-    Uniprot_File = open(inUniProt)
-
-    # Grabbing the header line
-    Uniprot_header = Uniprot_File.readline()
-
-    Uniprot_header = Uniprot_header.rstrip('\n')
-
-    Uniprot_header_fields = Uniprot_header.split('\t')
-
-    # Check the column header and grab indexes of our columns of interest
-    (UniProt_PrimAC_index, ENSG_index) = (-1, -1)
-
-    for i in range(len(Uniprot_header_fields)):
-        if Uniprot_header_fields[i] == 'Primary_AC':
-            UniProt_PrimAC_index = i
-        elif Uniprot_header_fields[i] == 'ENSGs':
-            ENSG_index = i
-
-    # Sanity check
-    if not UniProt_PrimAC_index >= 0:
-        logging.error("Missing required column title 'Primary_AC' in the file: %s \n" % inUniProt)
-        sys.exit()
-    elif not ENSG_index >= 0:
-        logging.error("Missing required column title 'ENSG' in the file: %s \n" % inUniProt)
-        sys.exit()
-    # else grabbed the required column indices -> PROCEED
-
-    # Data lines
-    for line in Uniprot_File:
-        line = line.rstrip('\n')
-        Uniprot_fields = line.split('\t')
-
-        # ENSG column  - This is a single string containing comma-seperated ENSGs
-        # So we split it into a list that can be accessed later
-        UniProt_ENSGs = Uniprot_fields[ENSG_index].split(',')
-
-        # List to store Human ENSG(s)
-        # found in the Unprot file
-        canonical_human_ENSGs = []
-
-        for ENSG in UniProt_ENSGs:
-            if ENSG in ENSG_Gene_dict.keys():
-                canonical_human_ENSGs.append(ENSG)
-
-        # Key -> Uniprot Primary accession
-        # Value -> Canonical_human_ENSG
-        if len(canonical_human_ENSGs) == 1:
-            Uniprot_ENSG_dict[Uniprot_fields[UniProt_PrimAC_index]] = ''.join(canonical_human_ENSGs)
-
-    # Closing the file
-    Uniprot_File.close()
-
-    return Uniprot_ENSG_dict
+    return ENSG_Gene_dict, Uniprot_ENSG_dict
 
 ###########################################################
 
@@ -360,8 +290,7 @@ def getHubProteins(ProtA_dict, ProtB_dict):
 
 # Parses the list - [Uniprot_Interactome_list]
 # returned by the function: UniProtInteractome
-# Also parses the dictionary - {Uniprot_ENSG_dict} returned by the function: Uniprot_ENSG
-# and {ENSG_Gene_dict} returned by the function: ENSG_Gene
+# Also parses the dictionaries returned by the ParseUniprot()
 #
 # Maps the UniProt Primary Accessions to ENSG
 #
@@ -374,8 +303,7 @@ def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG_Gene_dict = ENSG_Gene(args.inUniProt)
-    Uniprot_ENSG_dict = Uniprot_ENSG(args.inUniProt, ENSG_Gene_dict)
+    ENSG_Gene_dict, Uniprot_ENSG_dict = ParseUniprot(args.inUniProt)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 

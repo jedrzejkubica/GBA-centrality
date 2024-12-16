@@ -127,63 +127,52 @@ def UniProtInteractome(inExpFile):
 
 ###########################################################
 
-# Parses tab-seperated canonical transcripts file
-# Required columns are: 'ENSG' and 'GENE' (can be in any order,
-# but they MUST exist)
+# Parses tab-seperated Uniprot file produced by Uniprot_parser.py
+# which consists of 7 columns (one record per line):
+# - Uniprot Primary Accession
+# - Taxonomy Identifier
+# - ENST (or a comma seperated list of ENSTs)
+# - ENSG (or a comma seperated list of ENSGs)
+# - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
+# - GeneID (or a comma seperated list of GeneIDs)
+# - Gene Name (or a comma seperated list of Gene Names)
 #
-# Returns a dictionary:
-# - Key -> ENSG
-# - Value -> Gene
-def ENSG_Gene(inCanonicalFile):
-
-    # Dictionary for storing ENSG
-    # and Gene data
+# Returns a dict: key=ENSG, values=geneName
+# Note: if more than one gene name is associated with a particular ENSG,
+#       then keeping the first gene name from the list
+def ENSG_Gene(inUniProt):
     ENSG_Gene_dict = {}
 
-    # Opening canonical transcript file (gzip or non-gzip)
     try:
-        if inCanonicalFile.endswith('.gz'):
-            Canonical_File = gzip.open(inCanonicalFile, 'rt')
-        else:
-            Canonical_File = open(inCanonicalFile)
-    except IOError:
-        logging.error("Failed to read the Canonical transcript file: %s" % inCanonicalFile)
-        sys.exit()
+        f = open(inUniProt, 'r')
+    except Exception as e:
+        logging.error("Failed to read the Uniprot file: %s" % inUniProt, e)
+        raise Exception("cannot open provided Uniprot file")
 
-    # Grabbing the header line
-    Canonical_header_line = Canonical_File.readline()
+    # skip header
+    next(f)
 
-    Canonical_header_fields = Canonical_header_line.replace('\n','').split('\t')
+    for line in f:
+        split_line = line.rstrip().split('\t')
 
-    # Check the column headers and grab indexes of our columns of interest
-    (ENSG_index, Gene_index) = (-1,-1)
+        # Note: if some records are incomplete, then skip them
+        if len(split_line) != 7:
+            continue
 
-    for i in range(len(Canonical_header_fields)):
-        if Canonical_header_fields[i] == 'ENSG':
-            ENSG_index = i
-        elif Canonical_header_fields[i] == 'GENE':
-            Gene_index = i
+        AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
 
-    # Sanity check
-    if not ENSG_index >= 0:
-        logging.error("Missing required column title 'ENSG' in the file: %s \n" % inCanonicalFile)
-        sys.exit()
-    elif not Gene_index >= 0:
-        logging.error("Missing required column title 'GENE' in the file: %s \n" % inCanonicalFile)
-        sys.exit()
-    # else grabbed the required column indexes -> PROCEED
+        # keep only the first ENSG if exists in the files
+        if ENSGs == "":
+            continue
+        ENSGs_list = ENSGs.rstrip().split(',')
+        ENSG = ENSGs_list[0]
 
-    # Data lines
-    for line in Canonical_File:
-        line = line.rstrip('\n')
-        CanonicalTranscripts_fields = line.split('\t')
+        # if more than one gene name is associated with a particular ENSG,
+        # then keep only the first gene name from the list
+        geneNames_list = geneNames.rstrip().split(',')
+        geneName = geneNames_list[0]
 
-        # Key -> ENSG
-        # Value -> Gene
-        ENSG_Gene_dict[CanonicalTranscripts_fields[ENSG_index]] = CanonicalTranscripts_fields[Gene_index]
-
-    # Closing the file
-    Canonical_File.close()
+        ENSG_Gene_dict[ENSG] = geneName
 
     return ENSG_Gene_dict
 
@@ -245,7 +234,7 @@ def Uniprot_ENSG(inUniProt, ENSG_Gene_dict):
         UniProt_ENSGs = Uniprot_fields[ENSG_index].split(',')
 
         # List to store Human ENSG(s)
-        # found in the canonical transcripts file
+        # found in the Unprot file
         canonical_human_ENSGs = []
 
         for ENSG in UniProt_ENSGs:
@@ -385,7 +374,7 @@ def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG_Gene_dict = ENSG_Gene(args.inCanonicalFile)
+    ENSG_Gene_dict = ENSG_Gene(args.inUniProt)
     Uniprot_ENSG_dict = Uniprot_ENSG(args.inUniProt, ENSG_Gene_dict)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
@@ -419,7 +408,7 @@ Program: Parses the output file(s) produced by the interaction_parser.py to prod
          interactome, maps the UniProt Primary Accession of interacting proteins to ENSG using the
          Canonical transcripts file and prints to STDOUT
 --------------------------------------------------------------------------------------------------
-The output (High-quality Human Interactome) consists of five columns in SIF format:
+The output (High-quality Human Interactome) consists of three columns in SIF format:
   -> ENSG of Protein A
   -> Edge "pp" for "protein-protein"
   -> ENSG of Protein B
@@ -435,7 +424,6 @@ Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
 
     required.add_argument('--inExpFile', metavar = "Input File", dest = "inExpFile", nargs = '+', help = 'Output files produced by Interaction_parser.py', required = True)
     required.add_argument('--inUniProt', metavar = "Input File", dest = "inUniProt", help = 'Uniprot Primary Accession File generated by the uniprot parser', required = True)
-    required.add_argument('--inCanonicalFile', metavar = "Input File", dest = "inCanonicalFile", help = 'Canonical Transcripts file (.gz or non .gz)', required = True)
 
     args = file_parser.parse_args()
     Interactome_Uniprot2ENSG(args)

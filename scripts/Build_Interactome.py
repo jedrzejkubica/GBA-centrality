@@ -140,6 +140,7 @@ def UniProtInteractome(inExpFile):
 # Returns:
 #   - ENSG_Gene_dict: dict with key=ENSG, values=geneName
 #   - Uniprot_ENSG_dict: dict with key=Primary accession, values=ENSG
+
 # Note: if more than one gene name is associated with a particular ENSG,
 #       then keeping the first gene name from the list
 def ParseUniprot(inUniProt):
@@ -158,13 +159,13 @@ def ParseUniprot(inUniProt):
     for line in f:
         split_line = line.rstrip().split('\t')
 
-        # Note: if some records are incomplete, then skip them
+        # if some records are incomplete, then skip them
         if len(split_line) != 7:
             continue
 
         AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
 
-        # keep only the first ENSG if exists in the files
+        # keep only the first ENSG (if exists in the file)
         if ENSGs == "":
             continue
         ENSGs_list = ENSGs.rstrip().split(',')
@@ -176,7 +177,6 @@ def ParseUniprot(inUniProt):
         geneName = geneNames_list[0]
 
         ENSG_Gene_dict[ENSG] = geneName
-
         Uniprot_ENSG_dict[AC_primary] = ENSG
 
     return ENSG_Gene_dict, Uniprot_ENSG_dict
@@ -288,17 +288,17 @@ def getHubProteins(ProtA_dict, ProtB_dict):
 
 ###########################################################
 
-# Parses the list - [Uniprot_Interactome_list]
-# returned by the function: UniProtInteractome
-# Also parses the dictionaries returned by the ParseUniprot()
-#
-# Maps the UniProt Primary Accessions to ENSG
+# Parses the Uniprot_Interactome_list
+# returned by the function: UniProtInteractome()
+# and the dictionaries returned by ParseUniprot()
 #
 # Prints to STDOUT in SIF format
 # Output consists of 2 columns:
 # - ENSG of Protein A
-# - Edge "pp" for "protein-protein"
+# - "pp" for "protein-protein interaction"
 # - ENSG of Protein B
+#
+# Note: Hub proteins and self-loops are removed
 def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
@@ -307,18 +307,21 @@ def Interactome_Uniprot2ENSG(args):
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 
-    for data in Uniprot_Interactome_list:
-        # Eliminating hub/sticky proteins
-        if (data[0] in HubProteins) or (data[1] in HubProteins):
-            pass 
+    for sublist in Uniprot_Interactome_list:
+        proteinA = sublist[0]
+        proteinB = sublist[1]
+
+        # Removing hub/sticky proteins
+        if (proteinA in HubProteins) or (proteinB in HubProteins):
+            continue 
         else:
-            # Get the ENSG for the UniProt Primary Accessions
-            if data[0] in Uniprot_ENSG_dict.keys() and data[1] in Uniprot_ENSG_dict.keys():
-                # skip self-loops
-                if Uniprot_ENSG_dict.get(data[0]) == Uniprot_ENSG_dict.get(data[1]):
+
+            if (proteinA in Uniprot_ENSG_dict.keys()) and (proteinB in Uniprot_ENSG_dict.keys()):
+                # Removing self-loops
+                if proteinA == proteinB:
                     continue
-                else: 
-                    ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), "pp", Uniprot_ENSG_dict.get(data[1]))
+                else:
+                    ENSG_Interactome_out = (Uniprot_ENSG_dict[proteinA], "pp", Uniprot_ENSG_dict[proteinB])
                     print('\t'.join(ENSG_Interactome_out))
 
     logging.info("ALL DONE, completed successfully!")

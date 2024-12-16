@@ -117,13 +117,13 @@ def get_adjacency_matrices(interactome, d_max=5):
     return adjacency_matrices
 
 
-def main(interactome_file, causal_genes_file, gene2ENSG_file, patho, alpha, d_max):
+def main(interactome_file, causal_genes_file, inUniProt, patho, alpha, d_max):
 
     logger.info("Parsing interactome")
     interactome = utils.parse_interactome(interactome_file)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    (ENSG2gene, gene2ENSG) = utils.parse_gene2ENSG(gene2ENSG_file)
+    ENSG2gene, gene2ENSG, Uniprot2ENSG = utils.parse_Uniprot(inUniProt)
 
     logger.info("Parsing causal genes")
     causal_genes = utils.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     parser.add_argument('-i', '--interactome_file', type=pathlib.Path, required=True)
     parser.add_argument('--causal_genes_file', type=pathlib.Path, required=True)
-    parser.add_argument('--gene2ENSG_file', type=pathlib.Path, required=True)
+    parser.add_argument('--inUniProt', type=pathlib.Path, required=True)
     parser.add_argument('--patho', default='MMAF', type=str)
     parser.add_argument('--alpha', default=0.5, type=float)
     parser.add_argument('--d_max', default=5, type=int)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         main(interactome_file=args.interactome_file,
              causal_genes_file=args.causal_genes_file,
              patho=args.patho,
-             gene2ENSG_file=args.gene2ENSG_file,
+             inUniProt=args.inUniProt,
              alpha=args.alpha,
              d_max=args.d_max)
 

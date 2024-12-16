@@ -65,56 +65,6 @@ def parse_interactome(interactome_file) -> networkx.Graph:
                 num_edges, len(interactome.edges()), len(interactome.nodes))
     return (interactome)
 
-def parse_gene2ENSG(gene2ENSG_file):
-    '''
-    Build dicts mapping ENSGs to gene_names and gene_names to ENSGs
-
-    arguments:
-    - Uniprot: filename (with path) of TSV file mapping gene names to ENSGs, 
-      type=str with 2 columns: GENE ENSG
-
-    returns 2 dicts of all genes in the gene2ENSG_file:
-    - ENSG2gene: key=ENSG, value=gene_name
-    - gene2ENSG: key = gene_name, value=ENSG
-    '''
-    ENSG2gene = {}
-    gene2ENSG = {}
-
-    try:
-        f_gene2ENSG = open(gene2ENSG_file, 'r')
-    except Exception as e:
-        logger.error("Opening provided gene2ENSG file %s: %s", gene2ENSG_file, e)
-        raise Exception("cannot open provided gene2ENSG file")
-
-    # check header and skip
-    line = next(f_gene2ENSG)
-    line = line.rstrip()
-    if line != "GENE\tENSG":
-        logger.error("gene2ENSG file %s doesn't have the expected header",
-                     gene2ENSG_file)
-        raise Exception("Bad header in the gene2ENSG file")
-
-    for line in f_gene2ENSG:
-        split_line = line.rstrip().split('\t')
-        if len(split_line) != 2:
-            logger.error("gene2ENSG file %s has bad line (not 2 tab-separated fields): %s",
-                         gene2ENSG_file, line)
-            raise Exception("Bad line in the gene2ENSG file")
-        gene_name, ENSG = split_line
-        if ENSG in ENSG2gene:
-            logger.warning("ENSG %s mapped to multiple genes, keeping the first == %s",
-                           ENSG, ENSG2gene[ENSG])
-        else:
-            ENSG2gene[ENSG] = gene_name
-        if gene_name in gene2ENSG:
-            logger.warning("gene %s mapped to multiple ENSGs, keeping the first == %s",
-                           gene_name, gene2ENSG[gene_name])
-        else:
-            gene2ENSG[gene_name] = ENSG
-
-    f_gene2ENSG.close()
-    return(ENSG2gene, gene2ENSG)
-
 
 def parse_Uniprot(inUniProt):
     '''

@@ -63,7 +63,7 @@ def parse_interactome(interactome_file) -> networkx.Graph:
     logger.info("built non-redundant network from %i non-self interactions, " +
                 "resulting in %i edges between %i nodes",
                 num_edges, len(interactome.edges()), len(interactome.nodes))
-    return (interactome)
+    return interactome
 
 
 def parse_Uniprot(inUniProt):
@@ -104,17 +104,13 @@ def parse_Uniprot(inUniProt):
 
         # if some records are incomplete, then skip them
         if len(split_line) != 7:
-            logger.error("gene2ENSG file %s has bad line (not 7 tab-separated fields): %s",
-                         inUniProt, line)
             continue
 
         AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
 
         # keep only the first ENSG (if exists in the file)
         if ENSGs == "":
-            logger.warning("%s has no ENSG in %s", AC_primary, inUniProt)
             continue
-
         ENSGs_list = ENSGs.rstrip().split(',')
         ENSG = ENSGs_list[0]
 
@@ -122,9 +118,6 @@ def parse_Uniprot(inUniProt):
         # then keep only the first gene name from the list
         geneNames_list = geneNames.rstrip().split(',')
         geneName = geneNames_list[0]
-        if len(geneNames_list) > 1:
-            logger.warning("%s mapped to multiple gene names %s, keeping the first == %s",
-                           ENSG, geneNames_list, geneName)
 
         ENSG2gene[ENSG] = geneName
         gene2ENSG[geneName] = ENSG
@@ -165,7 +158,6 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
 
         if pathology != patho:
             continue
-        
         if gene_name in gene2ENSG:
             ENSG = gene2ENSG[gene_name]
             if ENSG in interactome:
@@ -173,14 +165,13 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
             else:
                 logger.warning("causal gene %s == %s is not in interactome, skipping it",
                                gene_name, ENSG)
-        else:
-            logger.warning("causal gene %s is not in gene2ENSG, skipping it", gene_name)
 
     f_causal.close()
 
     logger.info("found %i causal genes with known ENSG for pathology %s",
                 len(causal_genes), patho)
-    return(causal_genes)
+    
+    return causal_genes
 
 
 def scores_to_TSV(scores, ENSG2gene):
@@ -201,4 +192,3 @@ def scores_to_TSV(scores, ENSG2gene):
         if ENSG in ENSG2gene:
             gene = ENSG2gene[ENSG]
         print(ENSG + "\t" + gene + "\t" + str(score))
-

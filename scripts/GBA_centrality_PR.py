@@ -26,7 +26,7 @@ import pathlib
 
 import argparse
 
-import utils
+import data_parser
 
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
@@ -35,10 +35,11 @@ logger = logging.getLogger(__name__)
 def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> dict:
     '''
     Calculates scores for every gene in the interactome based on the proximity to causal genes.
-    Formula (for each node i):
-    {
-    score_i = sum_k_to_dmax(alpha**k) * sum_j[(A**k)_ij * score_j]
-    }
+    The algorithm:
+    1. Calculate all A**k up to k == d_max
+    2. Normalize all A**k row-wise
+    2. Zero the diagonals of all A**k
+    3. Multiply A**k and c (where 1: causal, 0: non-causal)
 
     arguments:
     - interactome: type=networkx.Graph
@@ -106,7 +107,7 @@ def get_adjacency_matrices(interactome, d_max=5):
 
         # row-wise normalization
         res_norm = res.astype(numpy.float32)
-        row_sum = res_norm.sum(axis=1) # row-wise axis=1, column-wise axis=0
+        row_sum = res_norm.sum(axis=1)  # row-wise axis=1, column-wise axis=0
         row_sum[row_sum == 0] = 1
         res_norm_T = res_norm.T
         res_norm_T /= row_sum
@@ -117,16 +118,16 @@ def get_adjacency_matrices(interactome, d_max=5):
     return adjacency_matrices
 
 
-def main(interactome_file, causal_genes_file, inUniProt, patho, alpha, d_max):
+def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max):
 
     logger.info("Parsing interactome")
-    interactome = utils.parse_interactome(interactome_file)
+    interactome = data_parser.parse_interactome(interactome_file)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    ENSG2gene, gene2ENSG, Uniprot2ENSG = utils.parse_Uniprot(inUniProt)
+    ENSG2gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_Uniprot(Uniprot_file)
 
     logger.info("Parsing causal genes")
-    causal_genes = utils.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
+    causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
 
     logger.info("Calculating powers of adjacency matrix")
     adjacency_matrices = get_adjacency_matrices(interactome, d_max)
@@ -135,7 +136,7 @@ def main(interactome_file, causal_genes_file, inUniProt, patho, alpha, d_max):
     scores = calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
 
     logger.info("Printing scores")
-    utils.scores_to_TSV(scores, ENSG2gene)
+    data_parser.scores_to_TSV(scores, ENSG2gene)
 
     logger.info("Done!")
 
@@ -151,12 +152,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         prog=script_name,
-        description="Calculate GBA centrality for new candidates of infertility based on the guilt-by-association paradigm."
+        description="""
+        Calculate GBA centrality for infertility based on the guilt-by-association paradigm.
+        """
     )
 
     parser.add_argument('-i', '--interactome_file', type=pathlib.Path, required=True)
     parser.add_argument('--causal_genes_file', type=pathlib.Path, required=True)
-    parser.add_argument('--inUniProt', type=pathlib.Path, required=True)
+    parser.add_argument('--Uniprot_file', type=pathlib.Path, required=True)
     parser.add_argument('--patho', default='MMAF', type=str)
     parser.add_argument('--alpha', default=0.5, type=float)
     parser.add_argument('--d_max', default=5, type=int)
@@ -167,7 +170,7 @@ if __name__ == "__main__":
         main(interactome_file=args.interactome_file,
              causal_genes_file=args.causal_genes_file,
              patho=args.patho,
-             inUniProt=args.inUniProt,
+             Uniprot_file=args.Uniprot_file,
              alpha=args.alpha,
              d_max=args.d_max)
 

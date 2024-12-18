@@ -17,7 +17,7 @@ Example usage for infetility MMAF phenotype and parameters alpha=0.5, d_max=10
 python scripts/GBA_centrality.py \
   -i input/Interactome_human.sif \
   --causal_genes_file input/causalGenes.tsv \
-  --inUniProt input/Uniprot_output.tsv \
+  --Uniprot_file input/Uniprot_output.tsv \
   --alpha 0.5 \
   --d_max 10 \
   --patho MMAF \
@@ -95,8 +95,7 @@ python scripts/Interaction_parser.py --inInteraction reactome.homo_sapiens.inter
 ```
 python scripts/Build_Interactome.py \
   --inExpFile Exp_Biogrid.tsv Exp_Intact.tsv Exp_Reactome.tsv \
-  --inUniProt Uniprot_output.tsv \
-  --inCanonicalFile canonicalGenes.tsv > Interactome_human.sif
+  --inUniProt Uniprot_output.tsv > Interactome_human.sif
 ```
 
 

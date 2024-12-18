@@ -4,8 +4,8 @@
 # This file was written by Jędrzej Kubica and Nicolas Thierry-Mieg
 # (CNRS, France) Nicolas.Thierry-Mieg@univ-grenoble-alpes.fr
 #
-# This program is free software: you can redistribute it and/or modify it under 
-# the terms of the GNU General Public License as published by the Free Software 
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
@@ -66,7 +66,7 @@ def parse_interactome(interactome_file) -> networkx.Graph:
     return interactome
 
 
-def parse_Uniprot(inUniProt):
+def parse_Uniprot(Uniprot_file):
     '''
     Parses tab-seperated Uniprot file produced by Uniprot_parser.py
     which consists of 7 columns (one record per line):
@@ -77,7 +77,7 @@ def parse_Uniprot(inUniProt):
     - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
     - GeneID (or a comma seperated list of GeneIDs)
     - Gene Name (or a comma seperated list of Gene Names)
-    
+
     Returns:
       - ENSG2gene: dict with key=ENSG, value=geneName
       - gene2ENSG: dict with key=gene, value=ENSG
@@ -91,9 +91,9 @@ def parse_Uniprot(inUniProt):
     Uniprot2ENSG = {}
 
     try:
-        f = open(inUniProt, 'r')
+        f = open(Uniprot_file, 'r')
     except Exception as e:
-        logging.error("Opening provided gene2ENSG file %s: %s", inUniProt, e)
+        logging.error("Opening provided gene2ENSG file %s: %s", Uniprot_file, e)
         raise Exception("cannot open provided Uniprot file")
 
     # skip header
@@ -147,7 +147,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
     except Exception as e:
         logger.error("Opening provided causal genes file %s: %s", causal_genes_file, e)
         raise Exception("cannot open provided causal genes file")
-    
+
     for line in f_causal:
         split_line = line.rstrip().split('\t')
         if len(split_line) != 2:
@@ -170,7 +170,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
 
     logger.info("found %i causal genes with known ENSG for pathology %s",
                 len(causal_genes), patho)
-    
+
     return causal_genes
 
 

@@ -1,7 +1,4 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
-
-#!/usr/bin/python
-
 # manojmw
 # 04 Dec, 2021
 
@@ -9,6 +6,7 @@ import re
 import argparse
 import logging
 import sys
+
 
 ###########################################################
 
@@ -55,7 +53,7 @@ def uniprot_parser(UniProtinFile):
     # UniProt has a bug (at the time of writing this script) - 
     # the lines for some records are incomplete and does not 
     # end with semi-colon as it is supposed to and even unclosed curly braces
-    # Ex: 
+    # Ex:
     # GN   Name=aadK {ECO:0000303|PubMed:17609790, ECO:0000303|PubMed:8293959,
     # Sometimes, GN lines can also start just with 'Synonyms'
     # Ex:
@@ -75,7 +73,7 @@ def uniprot_parser(UniProtinFile):
 
     # Data lines
     for line in UniProtinFile:
-        line = line.rstrip('\r\n') # removing trailing new lines and carriage returns
+        line = line.rstrip('\r\n')  # removing trailing new lines and carriage returns
 
         # Matching and retrieving the records
         if (re_AC.match(line)):
@@ -116,7 +114,7 @@ def uniprot_parser(UniProtinFile):
                                 # Gene Name
                                 GeneNamewithAcID = GeneNameD.split(' {')
                                 GeneName = GeneNamewithAcID[0]
-                            except: 
+                            except:
                                 GeneName = GeneNameD
                                 # There can be multiple 'GN' lines, especially
                                 # when there are many synonyms
@@ -124,9 +122,9 @@ def uniprot_parser(UniProtinFile):
                                 # Ex: 
                                 # GN   Name=Jon99Cii; Synonyms=SER1, SER5, Ser99Da; ORFNames=CG7877;
                                 # GN   Name=Jon99Ciii; Synonyms=SER2, SER5, Ser99Db; ORFNames=CG15519;
-                            if not GeneName in GeneNames:
+                            if GeneName not in GeneNames:
                                 GeneNames.append(GeneName)   
-                        # retreiving synonyms for Gene Name (if it exists)            
+                        # retreiving synonyms for Gene Name (if it exists)
                         if re.match(r'^Synonyms=(\S.*)', geneinfo):
                             GeneSynoinfo = re.match(r'^Synonyms=(\S.*)', geneinfo).group(1)
                             GeneSynonyms = []
@@ -167,8 +165,8 @@ def uniprot_parser(UniProtinFile):
                             # when they occur on multiple 'GN' lines
                             for synonym in GeneSynonyms:
                                 # Eliminating additional info (i.e not a synonym)
-                                if not ':' in synonym:
-                                    if not synonym in GeneNames:
+                                if ':' not in synonym:
+                                    if synonym not in GeneNames:
                                         GeneNames.append(synonym)   
             except:
                 # if the GN line contains only the Gene name, we do not split 
@@ -181,7 +179,7 @@ def uniprot_parser(UniProtinFile):
                         GeneName = GeneNamewithAcID[0]
                     except:
                         GeneName = GeneNameD 
-                    if not GeneName in GeneNames:
+                    if GeneName not in GeneNames:
                         GeneNames.append(GeneName)     
         elif (re.match(r'^GN\s+Name.*', line)):
             logging.error("Error: Missed the Gene Name \n" + ACs + line)
@@ -266,13 +264,12 @@ def uniprot_parser(UniProtinFile):
 
     return
 
+
 ###########################################################
 
 # Taking and handling command-line arguments
 def main():
-
-    file_parser = argparse.ArgumentParser(description =
-    """
+    file_parser = argparse.ArgumentParser(description="""
 --------------------------------------------------------------------------------------------------
 Program: Parses on STDIN a UniProt file, processes each record and prints to STDOUT in .tsv format
 --------------------------------------------------------------------------------------------------
@@ -287,17 +284,20 @@ The output consists of 7 columns:
 --------------------------------------------------------------------------------------------------
 
 Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
-    """,
-    formatter_class = argparse.RawDescriptionHelpFormatter)
+    """, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     file_parser.set_defaults(func=uniprot_parser)
     args = file_parser.parse_args()
     args.func(args)
 
+
 if __name__ == "__main__":
     # Logging to Standard Error
-    logging.basicConfig(format = "%(levelname)s %(asctime)s: %(filename)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S', stream = sys.stderr, level = logging.DEBUG)
-    logging.addLevelName(logging.INFO, 'I' )
+    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s",
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        stream=sys.stderr,
+                        level=logging.DEBUG)
+    logging.addLevelName(logging.INFO, 'I')
     logging.addLevelName(logging.ERROR, 'E')
     logging.addLevelName(logging.WARNING, 'W')
     main()

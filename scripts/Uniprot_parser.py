@@ -49,9 +49,9 @@ def uniprot_parser(UniProtinFile):
     re_AC = re.compile(r'^AC\s+(\S.*);$')
 
     # Gene Name/Synonyms from the GN line
-    # the below regex pattern ends with either ; or , because 
-    # UniProt has a bug (at the time of writing this script) - 
-    # the lines for some records are incomplete and does not 
+    # the below regex pattern ends with either ; or , because
+    # UniProt has a bug (at the time of writing this script)
+    # the lines for some records are incomplete and does not
     # end with semi-colon as it is supposed to and even unclosed curly braces
     # Ex:
     # GN   Name=aadK {ECO:0000303|PubMed:17609790, ECO:0000303|PubMed:8293959,
@@ -119,24 +119,24 @@ def uniprot_parser(UniProtinFile):
                                 # There can be multiple 'GN' lines, especially
                                 # when there are many synonyms
                                 # So we check to avoid adding the same gene name again
-                                # Ex: 
+                                # Ex:
                                 # GN   Name=Jon99Cii; Synonyms=SER1, SER5, Ser99Da; ORFNames=CG7877;
                                 # GN   Name=Jon99Ciii; Synonyms=SER2, SER5, Ser99Db; ORFNames=CG15519;
                             if GeneName not in GeneNames:
-                                GeneNames.append(GeneName)   
+                                GeneNames.append(GeneName)
                         # retreiving synonyms for Gene Name (if it exists)
                         if re.match(r'^Synonyms=(\S.*)', geneinfo):
                             GeneSynoinfo = re.match(r'^Synonyms=(\S.*)', geneinfo).group(1)
                             GeneSynonyms = []
                             # There can be multiple synonyms seperated by a ','
-                            # Ex: 
+                            # Ex:
                             # GN   Name=Jon99Cii; Synonyms=SER1, SER5, Ser99Da;
                             try:
                                 # Splitting at ',' can sometimes add additional
                                 # info of synonym to the list as well
                                 # Especially, when more than one additional info
                                 # exists for a given Gene synonym and these are also
-                                # Seperated by a ','. We eliminate this later while 
+                                # Seperated by a ','. We eliminate this later while
                                 # adding synonyms to the Gene Names list
                                 #
                                 # Gene name Synonym with one additional info
@@ -167,10 +167,10 @@ def uniprot_parser(UniProtinFile):
                                 # Eliminating additional info (i.e not a synonym)
                                 if ':' not in synonym:
                                     if synonym not in GeneNames:
-                                        GeneNames.append(synonym)   
+                                        GeneNames.append(synonym)
             except:
-                # if the GN line contains only the Gene name, we do not split 
-                # Ex: GN   Name=APOM; 
+                # if the GN line contains only the Gene name, we do not split
+                # Ex: GN   Name=APOM;
                 if re.match(r'^Name=(\S.*)', GNLine):
                     GeneNameD = re.match(r'^Name=(\S+)', GNLine).group(1)
                     try:
@@ -178,14 +178,14 @@ def uniprot_parser(UniProtinFile):
                         GeneNamewithAcID = GeneNameD.split(' {')
                         GeneName = GeneNamewithAcID[0]
                     except:
-                        GeneName = GeneNameD 
+                        GeneName = GeneNameD
                     if GeneName not in GeneNames:
-                        GeneNames.append(GeneName)     
+                        GeneNames.append(GeneName)
         elif (re.match(r'^GN\s+Name.*', line)):
             logging.error("Error: Missed the Gene Name \n" + ACs + line)
             sys.exit()
         elif (re.match(r'^GN\s+Synonyms.*', line)):
-            logging.error("Error: Missed the Gene Name Synonym \n" + ACs + line)   
+            logging.error("Error: Missed the Gene Name Synonym \n" + ACs + line)
             sys.exit()
         elif (re_TaxID.match(line)):
             if (TaxID != 0):
@@ -216,14 +216,14 @@ def uniprot_parser(UniProtinFile):
         # we Process the retreived data
         elif (line == '//'):
             # TaxID Human = 9606
-            # ignore entry if bad species; 
+            # ignore entry if bad species;
             if (TaxID == '9606'):
                 try:
                     ACs_split = ACs.split('; ')
-                    primary_AC = ACs_split[0] # Grab only the first AC
-                    secondary_AC_list = ACs_split[1:] # Grab the remaining ACs
+                    primary_AC = ACs_split[0]  # Grab only the first AC
+                    secondary_AC_list = ACs_split[1:]  # Grab the remaining ACs
                     # storing secondary_ACs as a single comma-seperated string
-                    secondary_ACs = ','.join(secondary_AC_list) 
+                    secondary_ACs = ','.join(secondary_AC_list)
                 except:
                     logging.error("Failed to store store UniProt Accession IDs for the protein: \t" + ACs)
                     sys.exit()
@@ -231,7 +231,7 @@ def uniprot_parser(UniProtinFile):
                     # storing Gene names as a single comma-seperated string
                     GeneNames = ','.join(GeneNames)
                 except:
-                    logging.error('Error: Failed to store Gene Name for the protein: \t' + ACs)    
+                    logging.error('Error: Failed to store Gene Name for the protein: \t' + ACs)
                     sys.exit()
                 try:
                     # Processing ENSTs and ENSGs
@@ -244,7 +244,7 @@ def uniprot_parser(UniProtinFile):
                     # storing GeneIDs as a single comma-seperated string
                     GeneIDs = ','.join(GeneIDs)
                 except:
-                    logging.error('Error: Failed to store Gene Identifiers for the protein: \t' + ACs)   
+                    logging.error('Error: Failed to store Gene Identifiers for the protein: \t' + ACs)
                     sys.exit()
 
                 # Printing to STDOUT

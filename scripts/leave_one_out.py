@@ -18,20 +18,25 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
     - causal_genes: dict of causal genes with key=ENSG, value=1
 
     returns:
-    - scores_left_out: dict with key=causal gene (ENSG), value=score of this gene
+    - ranks_left_out: dict with key=causal gene (ENSG), value=rank of this gene
       when it is left out
     '''
     # initialize dict to store left-out scores
-    scores_left_out = {}
+    ranks_left_out = {}
 
     for left_out in list(causal_genes.keys()):
         logger.info("Leaving out %s", left_out)
         del causal_genes[left_out]
         scores = GBA_centrality_PR.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
-        scores_left_out[left_out] = scores[left_out]
+
+        # save the left-out rank
+        results_sorted = sorted(scores.keys(), key=lambda item: scores[item], reverse=True)
+        rank_left_out = results_sorted.index(left_out) + 1 # ranks start at 1
+
+        ranks_left_out[left_out] = rank_left_out
         causal_genes[left_out] = 1
 
-    return scores_left_out
+    return ranks_left_out
 
 
 def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max):
@@ -48,11 +53,11 @@ def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max)
     logger.info("Calculating powers of adjacency matrix")
     adjacency_matrices = GBA_centrality_PR.get_adjacency_matrices(interactome, d_max)
 
-    logger.info("Calculating leave-one-out scores")
-    scores = leave_one_out(interactome, adjacency_matrices, causal_genes, alpha)
+    logger.info("Calculating leave-one-out ranks")
+    ranks = leave_one_out(interactome, adjacency_matrices, causal_genes, alpha)
 
-    logger.info("Printing leave-one-out scores")
-    data_parser.scores_to_TSV(scores, ENSG2gene)
+    logger.info("Printing leave-one-out ranks")
+    data_parser.scores_to_TSV(ranks, ENSG2gene)
 
     logger.info("Done!")
 

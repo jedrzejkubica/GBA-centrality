@@ -2,31 +2,11 @@
 
 # Interactome-TIMC
 
-This repository contains scripts for _GBA (Guilt-by-association) centrality_. 
+This repository contains scripts for _GBA (Guilt-by-association) centrality_.
 
-The method assigns a score for every protein in the interactome that represents the likelihood of its functional association with the phenotype of interest.
+_GBA (Guilt-by-association) centrality_ is a network propagations algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype of interest.
 
-
-## Example usage of _GBA centrality_
-
-As input, it requires an interactome, a Uniprot file, as well as known causal genes for the phenotype of interest.
-
-Example usage for infetility MMAF phenotype and parameters alpha=0.5, d_max=10
-
-```
-python scripts/GBA_centrality.py \
-  -i input/Interactome_human.sif \
-  --causal_genes_file input/causalGenes.tsv \
-  --Uniprot_file input/Uniprot_output.tsv \
-  --alpha 0.5 \
-  --d_max 10 \
-  --patho MMAF \
-  1>output/scores.tsv \
-  2>output/log.txt
-```
-
-
-## Prepare input data
+## How to construct the human interactome
 
 ### Step 1. Download interactome data
 
@@ -90,7 +70,7 @@ python scripts/Interaction_parser.py --inInteraction reactome.homo_sapiens.inter
 ```
 
 
-### Step 3. Build the interactome
+### Step 3. Build the high-quality human interactome
 
 ```
 python scripts/Build_Interactome.py \
@@ -103,6 +83,23 @@ python scripts/Build_Interactome.py \
 
 Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene_name, pathologyID.
 
+
+## Example usage of _GBA centrality_
+
+As input, GBA centrality takes an interactome SIF file, a Uniprot DAT file, as well as a list of known causal genes for the phenotype of interest.
+
+Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10
+
+```
+python scripts/GBA_centrality.py \
+  -i input/Interactome_human.sif \
+  --Uniprot_file input/Uniprot_output.tsv \
+  --alpha 0.5 \
+  --d_max 10 \
+  --patho MMAF \
+  1>output/scores.tsv \
+  2>output/log.txt
+```
 
 ## Validation of _GBA centrality_
 

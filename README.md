@@ -4,7 +4,7 @@ TIMC / MAGe Grenoble
 
 This repository contains scripts for GBA (Guilt-by-association) centrality.
 
-GBA (Guilt-by-association) centrality is a network propagations algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype of interest.
+Guilt-by-association (GBA) centrality is a network propagation algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype / disease. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype of interest.
 
 > [!WARNING]
 > **Please, find the most up-to-date code for GBA centrality scripts on the "pagerank" branch**

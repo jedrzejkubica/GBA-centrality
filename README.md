@@ -2,9 +2,13 @@ TIMC / MAGe Grenoble
 
 # Interactome-TIMC
 
-This repository contains scripts for _GBA (Guilt-by-association) centrality_. 
+This repository contains scripts for GBA (Guilt-by-association) centrality.
 
-The method assigns a score for every protein in the interactome that represents the likelihood of its functional association with the phenotype of interest.
+GBA (Guilt-by-association) centrality is a network propagations algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype of interest.
+
+> [!WARNING]
+> **Please, find the most up-to-date code for GBA centrality scripts on the "pagerank" branch**
+> **https://github.com/jjjk123/Interactome-TIMC/tree/pagerank**
 
 
 ## Example usage of _GBA centrality_

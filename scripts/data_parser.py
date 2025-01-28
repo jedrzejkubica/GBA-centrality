@@ -4,8 +4,8 @@
 # This file was written by Jędrzej Kubica and Nicolas Thierry-Mieg
 # (CNRS, France) Nicolas.Thierry-Mieg@univ-grenoble-alpes.fr
 #
-# This program is free software: you can redistribute it and/or modify it under 
-# the terms of the GNU General Public License as published by the Free Software 
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
@@ -63,57 +63,67 @@ def parse_interactome(interactome_file) -> networkx.Graph:
     logger.info("built non-redundant network from %i non-self interactions, " +
                 "resulting in %i edges between %i nodes",
                 num_edges, len(interactome.edges()), len(interactome.nodes))
-    return (interactome)
+    return interactome
 
-def parse_gene2ENSG(gene2ENSG_file):
+
+def parse_Uniprot(Uniprot_file):
     '''
-    Build dicts mapping ENSGs to gene_names and gene_names to ENSGs
+    Parses tab-seperated Uniprot file produced by Uniprot_parser.py
+    which consists of 7 columns (one record per line):
+    - Uniprot Primary Accession
+    - Taxonomy Identifier
+    - ENST (or a comma seperated list of ENSTs)
+    - ENSG (or a comma seperated list of ENSGs)
+    - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
+    - GeneID (or a comma seperated list of GeneIDs)
+    - Gene Name (or a comma seperated list of Gene Names)
 
-    arguments:
-    - gene2ENSG_file: filename (with path) of TSV file mapping gene names to ENSGs, 
-      type=str with 2 columns: GENE ENSG
+    Returns:
+      - ENSG2gene: dict with key=ENSG, value=geneName
+      - gene2ENSG: dict with key=gene, value=ENSG
+      - Uniprot2ENSG: dict with key=Primary accession, value=ENSG
 
-    returns 2 dicts of all genes in the gene2ENSG_file:
-    - ENSG2gene: key=ENSG, value=gene_name
-    - gene2ENSG: key = gene_name, value=ENSG
+    Note: if more than one gene name is associated with a particular ENSG,
+          then keeping the first gene name from the list
     '''
     ENSG2gene = {}
     gene2ENSG = {}
+    Uniprot2ENSG = {}
 
     try:
-        f_gene2ENSG = open(gene2ENSG_file, 'r')
+        f = open(Uniprot_file, 'r')
     except Exception as e:
-        logger.error("Opening provided gene2ENSG file %s: %s", gene2ENSG_file, e)
-        raise Exception("cannot open provided gene2ENSG file")
+        logging.error("Opening provided gene2ENSG file %s: %s", Uniprot_file, e)
+        raise Exception("cannot open provided Uniprot file")
 
-    # check header and skip
-    line = next(f_gene2ENSG)
-    line = line.rstrip()
-    if line != "GENE\tENSG":
-        logger.error("gene2ENSG file %s doesn't have the expected header",
-                     gene2ENSG_file)
-        raise Exception("Bad header in the gene2ENSG file")
+    # skip header
+    next(f)
 
-    for line in f_gene2ENSG:
+    for line in f:
         split_line = line.rstrip().split('\t')
-        if len(split_line) != 2:
-            logger.error("gene2ENSG file %s has bad line (not 2 tab-separated fields): %s",
-                         gene2ENSG_file, line)
-            raise Exception("Bad line in the gene2ENSG file")
-        gene_name, ENSG = split_line
-        if ENSG in ENSG2gene:
-            logger.warning("ENSG %s mapped to multiple genes, keeping the first == %s",
-                           ENSG, ENSG2gene[ENSG])
-        else:
-            ENSG2gene[ENSG] = gene_name
-        if gene_name in gene2ENSG:
-            logger.warning("gene %s mapped to multiple ENSGs, keeping the first == %s",
-                           gene_name, gene2ENSG[gene_name])
-        else:
-            gene2ENSG[gene_name] = ENSG
 
-    f_gene2ENSG.close()
-    return(ENSG2gene, gene2ENSG)
+        # if some records are incomplete, then skip them
+        if len(split_line) != 7:
+            continue
+
+        AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
+
+        # keep only the first ENSG (if exists in the file)
+        if ENSGs == "":
+            continue
+        ENSGs_list = ENSGs.rstrip().split(',')
+        ENSG = ENSGs_list[0]
+
+        # if more than one gene name is associated with a particular ENSG,
+        # then keep only the first gene name from the list
+        geneNames_list = geneNames.rstrip().split(',')
+        geneName = geneNames_list[0]
+
+        ENSG2gene[ENSG] = geneName
+        gene2ENSG[geneName] = ENSG
+        Uniprot2ENSG[AC_primary] = ENSG
+
+    return ENSG2gene, gene2ENSG, Uniprot2ENSG
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:
@@ -138,7 +148,6 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
         logger.error("Opening provided causal genes file %s: %s", causal_genes_file, e)
         raise Exception("cannot open provided causal genes file")
 
-    # not sure if there's a header line, assume there isn't
     for line in f_causal:
         split_line = line.rstrip().split('\t')
         if len(split_line) != 2:
@@ -149,21 +158,20 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
 
         if pathology != patho:
             continue
-        elif gene_name in gene2ENSG:
+        if gene_name in gene2ENSG:
             ENSG = gene2ENSG[gene_name]
-            if interactome.has_node(ENSG):
+            if ENSG in interactome:
                 causal_genes[ENSG] = 1
             else:
                 logger.warning("causal gene %s == %s is not in interactome, skipping it",
                                gene_name, ENSG)
-        else:
-            logger.warning("causal gene %s is not in gene2ENSG, skipping it", gene_name)
 
     f_causal.close()
 
     logger.info("found %i causal genes with known ENSG for pathology %s",
                 len(causal_genes), patho)
-    return(causal_genes)
+
+    return causal_genes
 
 
 def scores_to_TSV(scores, ENSG2gene):
@@ -184,4 +192,3 @@ def scores_to_TSV(scores, ENSG2gene):
         if ENSG in ENSG2gene:
             gene = ENSG2gene[ENSG]
         print(ENSG + "\t" + gene + "\t" + str(score))
-

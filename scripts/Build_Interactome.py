@@ -1,13 +1,13 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
-
-#!/usr/bin/python
-
 # manojmw
 # 27 Jan, 2022
 
-import sys, argparse
+import sys
+import argparse
 import logging
-import gzip
+
+import data_parser
+
 
 ###########################################################
 
@@ -43,7 +43,7 @@ def UniProtInteractome(inExpFile):
     # Proteins and Interaction Detection Method
     PPI_IntDetMethod_dict = {}
 
-     # List of User input PPI interaction experiments file(s)
+    # List of User input PPI interaction experiments file(s)
     PPIExpFiles = inExpFile
 
     # there can be multiple files
@@ -64,7 +64,7 @@ def UniProtInteractome(inExpFile):
             # MI:0254 -> genetic interference
             # MI:0686 -> unspecified method
 
-            ###Filtering out Interactions based on Interaction Type
+            # Filtering out Interactions based on Interaction Type
             IntType = ExpPPI_fields[4].rstrip('\n')
             # MI:0407 -> direct interaction
             # MI:0915 -> physical association
@@ -107,8 +107,8 @@ def UniProtInteractome(inExpFile):
     # We can use the keys from PPI_PMID_dict to iterate through PPI_IntDetMethod_dict
     for Int_key in PPI_PMID_dict:
 
-        # Checking if at least one of the experiments for a given interaction has been proved by any binary interaction method
-        # i.e. Other than Affintity Chromatography Technology (ACT) - 'MI:0004'
+        # Checking if at least one of the experiments for a given interaction has been proven
+        # by any binary interaction method i.e. Other than Affintity Chromatography Technology (ACT) - 'MI:0004'
         # Used to eliminate PPIs that have been proved ONLY by using ACT
         if any(value != 'MI:0004' for value in PPI_IntDetMethod_dict[Int_key]):
             Proteins = Int_key.split('_')
@@ -125,146 +125,10 @@ def UniProtInteractome(inExpFile):
 
     return Uniprot_Interactome_list
 
-###########################################################
-
-# Parses tab-seperated canonical transcripts file
-# Required columns are: 'ENSG' and 'GENE' (can be in any order,
-# but they MUST exist)
-#
-# Returns a dictionary:
-# - Key -> ENSG
-# - Value -> Gene
-def ENSG_Gene(inCanonicalFile):
-
-    # Dictionary for storing ENSG
-    # and Gene data
-    ENSG_Gene_dict = {}
-
-    # Opening canonical transcript file (gzip or non-gzip)
-    try:
-        if inCanonicalFile.endswith('.gz'):
-            Canonical_File = gzip.open(inCanonicalFile, 'rt')
-        else:
-            Canonical_File = open(inCanonicalFile)
-    except IOError:
-        logging.error("Failed to read the Canonical transcript file: %s" % inCanonicalFile)
-        sys.exit()
-
-    # Grabbing the header line
-    Canonical_header_line = Canonical_File.readline()
-
-    Canonical_header_fields = Canonical_header_line.replace('\n','').split('\t')
-
-    # Check the column headers and grab indexes of our columns of interest
-    (ENSG_index, Gene_index) = (-1,-1)
-
-    for i in range(len(Canonical_header_fields)):
-        if Canonical_header_fields[i] == 'ENSG':
-            ENSG_index = i
-        elif Canonical_header_fields[i] == 'GENE':
-            Gene_index = i
-
-    # Sanity check
-    if not ENSG_index >= 0:
-        logging.error("Missing required column title 'ENSG' in the file: %s \n" % inCanonicalFile)
-        sys.exit()
-    elif not Gene_index >= 0:
-        logging.error("Missing required column title 'GENE' in the file: %s \n" % inCanonicalFile)
-        sys.exit()
-    # else grabbed the required column indexes -> PROCEED
-
-    # Data lines
-    for line in Canonical_File:
-        line = line.rstrip('\n')
-        CanonicalTranscripts_fields = line.split('\t')
-
-        # Key -> ENSG
-        # Value -> Gene
-        ENSG_Gene_dict[CanonicalTranscripts_fields[ENSG_index]] = CanonicalTranscripts_fields[Gene_index]
-
-    # Closing the file
-    Canonical_File.close()
-
-    return ENSG_Gene_dict
 
 ###########################################################
 
-# Parses the tab-seperated UniProt Primary Accession file
-# produced by Uniprot_parser.py
-#
-# Required columns are: 'Primary_AC' and 'ENSGs' (can be in any order,
-# but they MUST exist)
-#
-# Parses the dictionary ENSG_Gene_dict
-# returned by the function ENSG_Gene
-# Maps UniProt Primary Accession to ENSG
-#
-# Returns a dictionary:
-# - Key: UniProt Primary Accession
-# - Value: Corresponding ENSG
-def Uniprot_ENSG(inUniProt, ENSG_Gene_dict):
-
-    # Dictionary for storing UniProt Primary
-    # Accession and ENSG data
-    Uniprot_ENSG_dict = {}
-
-    Uniprot_File = open(inUniProt)
-
-    # Grabbing the header line
-    Uniprot_header = Uniprot_File.readline()
-
-    Uniprot_header = Uniprot_header.rstrip('\n')
-
-    Uniprot_header_fields = Uniprot_header.split('\t')
-
-    # Check the column header and grab indexes of our columns of interest
-    (UniProt_PrimAC_index, ENSG_index) = (-1, -1)
-
-    for i in range(len(Uniprot_header_fields)):
-        if Uniprot_header_fields[i] == 'Primary_AC':
-            UniProt_PrimAC_index = i
-        elif Uniprot_header_fields[i] == 'ENSGs':
-            ENSG_index = i
-
-    # Sanity check
-    if not UniProt_PrimAC_index >= 0:
-        logging.error("Missing required column title 'Primary_AC' in the file: %s \n" % inUniProt)
-        sys.exit()
-    elif not ENSG_index >= 0:
-        logging.error("Missing required column title 'ENSG' in the file: %s \n" % inUniProt)
-        sys.exit()
-    # else grabbed the required column indices -> PROCEED
-
-    # Data lines
-    for line in Uniprot_File:
-        line = line.rstrip('\n')
-        Uniprot_fields = line.split('\t')
-
-        # ENSG column  - This is a single string containing comma-seperated ENSGs
-        # So we split it into a list that can be accessed later
-        UniProt_ENSGs = Uniprot_fields[ENSG_index].split(',')
-
-        # List to store Human ENSG(s)
-        # found in the canonical transcripts file
-        canonical_human_ENSGs = []
-
-        for ENSG in UniProt_ENSGs:
-            if ENSG in ENSG_Gene_dict.keys():
-                canonical_human_ENSGs.append(ENSG)
-
-        # Key -> Uniprot Primary accession
-        # Value -> Canonical_human_ENSG
-        if len(canonical_human_ENSGs) == 1:
-            Uniprot_ENSG_dict[Uniprot_fields[UniProt_PrimAC_index]] = ''.join(canonical_human_ENSGs)
-
-    # Closing the file
-    Uniprot_File.close()
-
-    return Uniprot_ENSG_dict
-
-###########################################################
-
-# Parses the Uniprot_Interactome_list returned by 
+# Parses the Uniprot_Interactome_list returned by
 # the function UniProtInteractome
 #
 # Required items in each sublist:
@@ -283,13 +147,14 @@ def Interactome_dict(Uniprot_Interactome_list):
     # In ProtB_dict, key -> Protein B; Value -> Protein A
     ProtA_dict = {}
     ProtB_dict = {}
-        
+
     # Data lines
     for data in Uniprot_Interactome_list:
 
-        if data[0] != data[1]: # checking self-interaction
+        # checking self-interaction
+        if data[0] != data[1]:
             # Check if the Key(ProtA) exists in ProtA_dict
-            # If yes, then append the interctor to 
+            # If yes, then append the interctor to
             # the list of values (Interactors)
             if ProtA_dict.get(data[0], False):
                 ProtA_dict[data[0]].append(data[1])
@@ -297,17 +162,15 @@ def Interactome_dict(Uniprot_Interactome_list):
                 ProtA_dict[data[0]] = [data[1]]
 
             # Check if the Key(ProtB) exists in ProtB_dict
-            # If yes, then append the interctor to 
+            # If yes, then append the interctor to
             # the list of values (Interactors)
             if ProtB_dict.get(data[1], False):
                 ProtB_dict[data[1]].append(data[0])
             else:
-                ProtB_dict[data[1]] = [data[0]]    
-
-        # else:
-            # NOOP -> The interaction is a self-interaction
+                ProtB_dict[data[1]] = [data[0]]
 
     return ProtA_dict, ProtB_dict
+
 
 ###########################################################
 
@@ -329,8 +192,7 @@ def getHubProteins(ProtA_dict, ProtB_dict):
     # Initializing dictionary to store hub proteins
     HubProteins = {}
 
-    # Checking the number of Interactors for a 
-    # given protein
+    # Checking the number of Interactors for a given protein
     for protein in ProtA_dict:
         # Get the no. of Interactors
         InteractorsCount_ProtA_dict = len(ProtA_dict[protein])
@@ -338,12 +200,12 @@ def getHubProteins(ProtA_dict, ProtB_dict):
         # present in ProtB_dict
         if protein in ProtB_dict:
             InteractorsCount_ProtB_dict = 0
-            # If present, loop through each interactor to 
+            # If present, loop through each interactor to
             # make sure that the Interactors
             # for the current protein in ProtB_dict was not already seen
             # in the Interactor list of ProtA_dict
             for interactor in ProtB_dict[protein]:
-                if not interactor in ProtA_dict[protein]:
+                if interactor not in ProtA_dict[protein]:
                     InteractorsCount_ProtB_dict += 1
             Total_InteractorsCount = InteractorsCount_ProtA_dict + InteractorsCount_ProtB_dict
         # if the protien not present in ProtB_dict
@@ -351,7 +213,7 @@ def getHubProteins(ProtA_dict, ProtB_dict):
         else:
             Total_InteractorsCount = InteractorsCount_ProtA_dict
 
-        # If the protein has > 120 Interactors 
+        # If the protein has > 120 Interactors
         # it is considered a hub/sticky protein
         # append it to the HubProteins list
         if Total_InteractorsCount > 120:
@@ -360,78 +222,87 @@ def getHubProteins(ProtA_dict, ProtB_dict):
     # Checking the interactor count of proteins
     # present only in ProtB_dict
     for protein in ProtB_dict:
-        if not protein in ProtA_dict:
+        if protein not in ProtA_dict:
             # checking for Hub protein
             if len(ProtB_dict[protein]) > 120:
                 HubProteins[protein] = 1
 
-    return HubProteins 
+    return HubProteins
+
 
 ###########################################################
 
-# Parses the list - [Uniprot_Interactome_list]
-# returned by the function: UniProtInteractome
-# Also parses the dictionary - {Uniprot_ENSG_dict} returned by the function: Uniprot_ENSG
-# and {ENSG_Gene_dict} returned by the function: ENSG_Gene
-#
-# Maps the UniProt Primary Accessions to ENSG
+# Parses the Uniprot_Interactome_list
+# returned by the function: UniProtInteractome()
+# and the dictionaries returned by ParseUniprot()
 #
 # Prints to STDOUT in SIF format
 # Output consists of 2 columns:
 # - ENSG of Protein A
-# - Edge "pp" for "protein-protein"
+# - "pp" for "protein-protein interaction"
 # - ENSG of Protein B
+#
+# Note: Hub proteins and self-loops are removed
 def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG_Gene_dict = ENSG_Gene(args.inCanonicalFile)
-    Uniprot_ENSG_dict = Uniprot_ENSG(args.inUniProt, ENSG_Gene_dict)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_Uniprot(args.inUniProt)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 
-    for data in Uniprot_Interactome_list:
-        # Eliminating hub/sticky proteins
-        if (data[0] in HubProteins) or (data[1] in HubProteins):
-            pass 
+    for sublist in Uniprot_Interactome_list:
+        proteinA = sublist[0]
+        proteinB = sublist[1]
+
+        # Removing hub/sticky proteins
+        if (proteinA in HubProteins) or (proteinB in HubProteins):
+            continue
         else:
-            # Get the ENSG for the UniProt Primary Accessions
-            if data[0] in Uniprot_ENSG_dict.keys() and data[1] in Uniprot_ENSG_dict.keys():
-                ENSG_Interactome_out = (Uniprot_ENSG_dict.get(data[0]), "pp", Uniprot_ENSG_dict.get(data[1]))
-                print('\t'.join(ENSG_Interactome_out))
+
+            if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
+                # Removing self-loops
+                if proteinA == proteinB:
+                    continue
+                else:
+                    ENSG_Interactome_out = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
+                    print('\t'.join(ENSG_Interactome_out))
 
     logging.info("ALL DONE, completed successfully!")
 
     return
 
+
 ###########################################################
 
 # Taking and handling command-line arguments
 def main():
-    file_parser = argparse.ArgumentParser(description =
-    """
---------------------------------------------------------------------------------------------------
-Program: Parses the output file(s) produced by the interaction_parser.py to produce a high-quality
-         interactome, maps the UniProt Primary Accession of interacting proteins to ENSG using the
-         Canonical transcripts file and prints to STDOUT
---------------------------------------------------------------------------------------------------
-The output (High-quality Human Interactome) consists of five columns in SIF format:
-  -> ENSG of Protein A
-  -> Edge "pp" for "protein-protein"
-  -> ENSG of Protein B
---------------------------------------------------------------------------------------------------
-
-Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
-    """,
-    formatter_class = argparse.RawDescriptionHelpFormatter)
-
+    file_parser = argparse.ArgumentParser(description="""
+    --------------------------------------------------------------------------------------------------
+    Parses the output file(s) produced by Interaction_parser.py
+    and Uniprot_output.tsv produced by Uniprot_parser.py
+    to produce a high-quality interactome (ie, no hubs, no self-loops).
+    --------------------------------------------------------------------------------------------------
+    The output (high-quality interactome) consists of three columns in SIF format:
+    - ENSG of Protein A
+    - "pp" for "protein-protein interaction"
+    - ENSG of Protein B
+    --------------------------------------------------------------------------------------------------
+    """, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     required = file_parser.add_argument_group('Required arguments')
-    optional = file_parser.add_argument_group('Optional arguments')
 
-    required.add_argument('--inExpFile', metavar = "Input File", dest = "inExpFile", nargs = '+', help = 'Output files produced by Interaction_parser.py', required = True)
-    required.add_argument('--inUniProt', metavar = "Input File", dest = "inUniProt", help = 'Uniprot Primary Accession File generated by the uniprot parser', required = True)
-    required.add_argument('--inCanonicalFile', metavar = "Input File", dest = "inCanonicalFile", help = 'Canonical Transcripts file (.gz or non .gz)', required = True)
+    required.add_argument('--inExpFile',
+                          metavar="Input File",
+                          dest="inExpFile",
+                          nargs='+',
+                          help='Output files produced by Interaction_parser.py',
+                          required=True)
+    required.add_argument('--inUniProt',
+                          metavar="Input File",
+                          dest="inUniProt",
+                          help='Uniprot Primary Accession File generated by the uniprot parser',
+                          required=True)
 
     args = file_parser.parse_args()
     Interactome_Uniprot2ENSG(args)
@@ -439,8 +310,11 @@ Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
 
 if __name__ == "__main__":
     # Logging to Standard Error
-    logging.basicConfig(format = "%(levelname)s %(asctime)s: %(filename)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S', stream = sys.stderr, level = logging.DEBUG)
-    logging.addLevelName(logging.INFO, 'I' )
+    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s",
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        stream=sys.stderr,
+                        level=logging.DEBUG)
+    logging.addLevelName(logging.INFO, 'I')
     logging.addLevelName(logging.ERROR, 'E')
     logging.addLevelName(logging.WARNING, 'W')
     main()

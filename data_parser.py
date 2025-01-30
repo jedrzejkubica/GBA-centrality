@@ -1,5 +1,5 @@
 ############################################################################################
-# Copyright (C) Jędrzej Kubica, Nicolas Thierry-Mieg, 2024-2025
+# Copyright (C) Jędrzej Kubica, Nicolas Thierry-Mieg, 2024
 #
 # This file was written by Jędrzej Kubica and Nicolas Thierry-Mieg
 # (CNRS, France) Nicolas.Thierry-Mieg@univ-grenoble-alpes.fr
@@ -66,9 +66,9 @@ def parse_interactome(interactome_file) -> networkx.Graph:
     return interactome
 
 
-def parse_Uniprot(Uniprot_file):
+def parse_uniprot(uniprot_file):
     '''
-    Parses tab-seperated Uniprot file produced by Uniprot_parser.py
+    Parses tab-seperated Uniprot file produced by Interactome/uniprot_parser.py
     which consists of 7 columns (one record per line):
     - Uniprot Primary Accession
     - Taxonomy Identifier
@@ -81,19 +81,19 @@ def parse_Uniprot(Uniprot_file):
     Returns:
       - ENSG2gene: dict with key=ENSG, value=geneName
       - gene2ENSG: dict with key=gene, value=ENSG
-      - Uniprot2ENSG: dict with key=Primary accession, value=ENSG
+      - uniprot2ENSG: dict with key=Primary accession, value=ENSG
 
     Note: if more than one gene name is associated with a particular ENSG,
           then keeping the first gene name from the list
     '''
     ENSG2gene = {}
     gene2ENSG = {}
-    Uniprot2ENSG = {}
+    uniprot2ENSG = {}
 
     try:
-        f = open(Uniprot_file, 'r')
+        f = open(uniprot_file, 'r')
     except Exception as e:
-        logging.error("Opening provided gene2ENSG file %s: %s", Uniprot_file, e)
+        logging.error("Opening provided gene2ENSG file %s: %s", uniprot_file, e)
         raise Exception("cannot open provided Uniprot file")
 
     # skip header
@@ -121,9 +121,9 @@ def parse_Uniprot(Uniprot_file):
 
         ENSG2gene[ENSG] = geneName
         gene2ENSG[geneName] = ENSG
-        Uniprot2ENSG[AC_primary] = ENSG
+        uniprot2ENSG[AC_primary] = ENSG
 
-    return ENSG2gene, gene2ENSG, Uniprot2ENSG
+    return ENSG2gene, gene2ENSG, uniprot2ENSG
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:

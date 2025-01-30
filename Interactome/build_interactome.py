@@ -1,9 +1,11 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
 
+import os
 import sys
 import argparse
 import logging
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import data_parser
 
 
@@ -245,7 +247,7 @@ def Interactome_Uniprot2ENSG(args):
 
     # Calling the functions
     Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_Uniprot(args.inUniProt)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.inUniProt)
     (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
     HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
 

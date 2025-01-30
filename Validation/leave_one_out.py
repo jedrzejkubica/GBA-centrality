@@ -24,9 +24,9 @@ import pathlib
 
 import argparse
 
-sys.path.append("..")
-from .. import GBA_centrality
-from data_parser import data_parser
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+import GBA_centrality
+import data_parser
 
 
 def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):

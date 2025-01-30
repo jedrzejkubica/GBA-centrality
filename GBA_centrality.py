@@ -16,15 +16,15 @@
 # If not, see <https://www.gnu.org/licenses/>.
 ############################################################################################
 
-import logging
-import networkx
-import numpy
 import os
 import sys
-
+import logging
 import pathlib
 
 import argparse
+
+import numpy
+import networkx
 
 import data_parser
 
@@ -35,11 +35,6 @@ logger = logging.getLogger(__name__)
 def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> dict:
     '''
     Calculates scores for every gene in the interactome based on the proximity to causal genes.
-    The algorithm:
-    1. Calculate all A**k up to k == d_max
-    2. Normalize all A**k row-wise
-    2. Zero the diagonals of all A**k
-    3. Multiply A**k and c (where 1: causal, 0: non-causal)
 
     arguments:
     - interactome: type=networkx.Graph
@@ -118,13 +113,13 @@ def get_adjacency_matrices(interactome, d_max=5):
     return adjacency_matrices
 
 
-def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max):
+def main(interactome_file, causal_genes_file, uniprot_file, patho, alpha, d_max):
 
     logger.info("Parsing interactome")
     interactome = data_parser.parse_interactome(interactome_file)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    ENSG2gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_Uniprot(Uniprot_file)
+    ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
@@ -153,13 +148,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        Calculate GBA centrality for infertility based on the guilt-by-association paradigm.
+        GBA centrality - a network propagations algorithm for disease gene prioritization. 
+        The method assigns scores to genes that represent their likelihood of being causal
+        for the phenotype. It takes into account the topology of the protein-protein interaction 
+        network (interactome) and prior knowledge about causal genes for the phenotype of interest.
         """
     )
 
     parser.add_argument('-i', '--interactome_file', type=pathlib.Path, required=True)
     parser.add_argument('--causal_genes_file', type=pathlib.Path, required=True)
-    parser.add_argument('--Uniprot_file', type=pathlib.Path, required=True)
+    parser.add_argument('--uniprot_file', type=pathlib.Path, required=True)
     parser.add_argument('--patho', default='MMAF', type=str)
     parser.add_argument('--alpha', default=0.5, type=float)
     parser.add_argument('--d_max', default=5, type=int)
@@ -170,7 +168,7 @@ if __name__ == "__main__":
         main(interactome_file=args.interactome_file,
              causal_genes_file=args.causal_genes_file,
              patho=args.patho,
-             Uniprot_file=args.Uniprot_file,
+             uniprot_file=args.uniprot_file,
              alpha=args.alpha,
              d_max=args.d_max)
 

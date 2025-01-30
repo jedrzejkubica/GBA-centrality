@@ -24,8 +24,9 @@ import pathlib
 
 import argparse
 
-import GBA_centrality_PR
-import data_parser
+sys.path.append("..")
+from .. import GBA_centrality
+from data_parser import data_parser
 
 
 def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
@@ -45,11 +46,11 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
     for left_out in list(causal_genes.keys()):
         logger.info("Leaving out %s", left_out)
         del causal_genes[left_out]
-        scores = GBA_centrality_PR.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
+        scores = GBA_centrality.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
 
         # save the left-out rank
         results_sorted = sorted(scores.keys(), key=lambda item: scores[item], reverse=True)
-        rank_left_out = results_sorted.index(left_out) + 1 # ranks start at 1
+        rank_left_out = results_sorted.index(left_out) + 1  # ranks start at 1
 
         ranks_left_out[left_out] = rank_left_out
         causal_genes[left_out] = 1
@@ -69,7 +70,7 @@ def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max)
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
 
     logger.info("Calculating powers of adjacency matrix")
-    adjacency_matrices = GBA_centrality_PR.get_adjacency_matrices(interactome, d_max)
+    adjacency_matrices = GBA_centrality.get_adjacency_matrices(interactome, d_max)
 
     logger.info("Calculating leave-one-out ranks")
     ranks = leave_one_out(interactome, adjacency_matrices, causal_genes, alpha)

@@ -1,5 +1,5 @@
 ############################################################################################
-# Copyright (C) Jędrzej Kubica, Nicolas Thierry-Mieg, 2024
+# Copyright (C) Jędrzej Kubica, Nicolas Thierry-Mieg, 2024-2025
 #
 # This file was written by Jędrzej Kubica and Nicolas Thierry-Mieg
 # (CNRS, France) Nicolas.Thierry-Mieg@univ-grenoble-alpes.fr

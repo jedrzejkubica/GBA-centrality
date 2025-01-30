@@ -47,7 +47,7 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
         scores = GBA_centrality.calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
 
         # save the left-out score
-        scores_left_out = scores[left_out]
+        scores_left_out[left_out] = scores[left_out]
 
         # add left-out back to causal_genes
         causal_genes[left_out] = 1

@@ -1,6 +1,4 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
-# manojmw
-# 04 Dec, 2021
 
 import re
 import argparse
@@ -114,7 +112,7 @@ def uniprot_parser(UniProtinFile):
                                 # Gene Name
                                 GeneNamewithAcID = GeneNameD.split(' {')
                                 GeneName = GeneNamewithAcID[0]
-                            except:
+                            except Exception:
                                 GeneName = GeneNameD
                                 # There can be multiple 'GN' lines, especially
                                 # when there are many synonyms
@@ -157,9 +155,9 @@ def uniprot_parser(UniProtinFile):
                                             Gsynowithaddinfo = synonym.split(' {')
                                             Gsynonym = Gsynowithaddinfo[0]
                                             GeneSynonyms.append(Gsynonym)
-                                        except:
+                                        except Exception:
                                             GeneSynonyms.append(synonym)
-                            except:
+                            except Exception:
                                 GeneSynonyms.append(GeneSynoinfo)
                             # Avoid adding the same synonym again especially
                             # when they occur on multiple 'GN' lines
@@ -168,7 +166,7 @@ def uniprot_parser(UniProtinFile):
                                 if ':' not in synonym:
                                     if synonym not in GeneNames:
                                         GeneNames.append(synonym)
-            except:
+            except Exception:
                 # if the GN line contains only the Gene name, we do not split
                 # Ex: GN   Name=APOM;
                 if re.match(r'^Name=(\S.*)', GNLine):
@@ -177,7 +175,7 @@ def uniprot_parser(UniProtinFile):
                         # When Gene Name contains additional info
                         GeneNamewithAcID = GeneNameD.split(' {')
                         GeneName = GeneNamewithAcID[0]
-                    except:
+                    except Exception:
                         GeneName = GeneNameD
                     if GeneName not in GeneNames:
                         GeneNames.append(GeneName)
@@ -192,7 +190,7 @@ def uniprot_parser(UniProtinFile):
                 logging.error("Several OX lines for the protein: \t" + ACs)
                 sys.exit()
             TaxID = re_TaxID.match(line).group(1)
-        elif (re.match(r'^OX\s',line)):
+        elif (re.match(r'^OX\s', line)):
             logging.error("Missed the OX line \n" + line)
             sys.exit()
         elif (re_ENS.match(line)):
@@ -224,28 +222,27 @@ def uniprot_parser(UniProtinFile):
                     secondary_AC_list = ACs_split[1:]  # Grab the remaining ACs
                     # storing secondary_ACs as a single comma-seperated string
                     secondary_ACs = ','.join(secondary_AC_list)
-                except:
+                except Exception:
                     logging.error("Failed to store store UniProt Accession IDs for the protein: \t" + ACs)
                     sys.exit()
                 try:
                     # storing Gene names as a single comma-seperated string
                     GeneNames = ','.join(GeneNames)
-                except:
+                except Exception:
                     logging.error('Error: Failed to store Gene Name for the protein: \t' + ACs)
                     sys.exit()
                 try:
                     # Processing ENSTs and ENSGs
                     ENSTs = ','.join(ENSTs)
                     ENSGs = ','.join(ENSGs)
-                except:
+                except Exception:
                     logging.error("Failed to store Ensembl Identifiers for the protein: \t" + ACs)
                     sys.exit()
                 try:
                     # storing GeneIDs as a single comma-seperated string
                     GeneIDs = ','.join(GeneIDs)
                 except:
-                    logging.error('Error: Failed to store Gene Identifiers for the protein: \t' + ACs)
-                    sys.exit()
+                    raise Exception("Error: Failed to store Gene Identifiers for the protein: \t' + ACs")
 
                 # Printing to STDOUT
                 UniProt_outline = [primary_AC, TaxID, ENSTs, ENSGs, secondary_ACs, GeneIDs, GeneNames]

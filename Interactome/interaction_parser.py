@@ -1,44 +1,47 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
 
+#!/usr/bin/python
+
+# manojmw
+# 14 Jan, 2022
+
 import re
-import sys
-import argparse
+import sys, argparse
 import logging
 
+###########################################################
 
+# Parses the tab-seperated UniProt Output file
+# produced by 1_Uniprot_parser.py
+#
+# Required columns are: 
+# - 'Primary_AC' 
+# - 'TaxID' 
+# - 'Secondary_ACs'
+# - 'GeneIDs'
+# - 'GeneNames'
+# (can be in any order,
+# but they MUST exist)
+#
+# Returns 4 dictionaries:
+# UniprotPrimAC_dict dictionary contains:
+# - Key -> UniProt Primary Accession
+# - Value -> TaxID
+#
+# UniprotSecAC_dict dictionary contains:
+# - Key -> UniProt Secondary Accession
+# - Value -> Corresponding UniProt Primary Accession
+# 
+# GeneID_dict dictionary contains:
+# - Key -> GeneID
+# - Value -> Corresponding UniProt Primary Accession
+#
+# GeneName_dict dictionary contains:
+# - Key -> GeneName
+# - Value -> Corresponding UniProt Primary Accession
 def Build_UniProtDicts(inUniProt):
-    """
-    Parses the tab-seperated Uniprot Output file
-    produced by uniprot_parser.py
 
-    Required columns are:
-    - 'Primary_AC'
-    - 'TaxID'
-    - 'Secondary_ACs'
-    - 'GeneIDs'
-    - 'GeneNames'
-    (can be in any order,
-    but they MUST exist)
-
-    Returns 4 dictionaries:
-    UniprotPrimAC_dict dictionary contains:
-    - Key -> UniProt Primary Accession
-    - Value -> TaxID
-
-    UniprotSecAC_dict dictionary contains:
-    - Key -> UniProt Secondary Accession
-    - Value -> Corresponding UniProt Primary Accession
-
-    GeneID_dict dictionary contains:
-    - Key -> GeneID
-    - Value -> Corresponding UniProt Primary Accession
-
-    GeneName_dict dictionary contains:
-    - Key -> GeneName
-    - Value -> Corresponding UniProt Primary Accession
-    """
-
-    logging.info("Starting to run")
+    logging.info("starting to run")
 
     Uniprot_File = open(inUniProt)
 
@@ -78,7 +81,7 @@ def Build_UniProtDicts(inUniProt):
         elif Uniprot_header_fields[i] == 'GeneIDs':
             GeneID_index = i
         elif Uniprot_header_fields[i] == 'GeneNames':
-            GeneName_index = i
+            GeneName_index = i    
 
     # Sanity check
     if not UniProtPrimAC_index >= 0:
@@ -100,7 +103,7 @@ def Build_UniProtDicts(inUniProt):
 
     # Data lines
     for line in Uniprot_File:
-        UniProt_line = line.rstrip("\n")  # removing carriage returns
+        UniProt_line = line.rstrip("\n") # removing carriage returns
         UniProt_fields = UniProt_line.split('\t')
 
         # Populating UniprotPrimAC_dict
@@ -111,24 +114,24 @@ def Build_UniProtDicts(inUniProt):
         # Populating UniprotSecAC_dict
         # Key -> Uniprot Secondary_AC
         # Value -> UniProt Primary_AC
-        # Secondary_ACs field in the inFile can contain
+        # Secondary_ACs field in the inFile can contain 
         # a single UniProt Secondary Accession or a comma-seperated
         # list of UniProt Secondary Accessions
         try:
             UniProt_SecACs = UniProt_fields[UniprotSecAC_index].split(',')
-        except Exception:
+        except:
             UniProt_SecACs = [UniProt_fields[UniprotSecAC_index]]
 
         for UniProt_SecAC in UniProt_SecACs:
-            (SecAC, PrimAC) = (UniProt_SecAC, UniProt_fields[UniProtPrimAC_index])
+            (SecAC,PrimAC) = (UniProt_SecAC, UniProt_fields[UniProtPrimAC_index])
 
-            # If the UniProt Secondary_AC is associated with multiple Primary_AC,
-            # it is considered a bad Secondary_AC
+            # If the UniProt Secondary_AC is associated with multiple Primary_AC, 
+            # it is considered a bad Secondary_AC 
             # No Uniprot Accession is of the type "-1"
             # So, we assign "-1" as the value to this bad Secondary_AC to avoid using it later
             if UniprotSecAC_dict.get(SecAC, False):
                 if UniprotSecAC_dict[SecAC] != "-1":
-                    UniprotSecAC_dict[SecAC] = "-1"
+                    UniprotSecAC_dict[SecAC]  = "-1"
                 # else: Secondary_AC is already bad => NOOP
             else:
                 UniprotSecAC_dict[SecAC] = PrimAC
@@ -136,18 +139,18 @@ def Build_UniProtDicts(inUniProt):
         # Populating GeneID_dict
         # Key -> GeneID
         # Value -> Uniprot Primary Accession
-        # GeneIDs field in the inFile can contain
+        # GeneIDs field in the inFile can contain 
         # a single GeneID or a comma-seperated
-        # list of GeneIDs
+        # list of GeneIDs        
         try:
             UniProt_GeneIDs = UniProt_fields[GeneID_index].split(',')
-        except Exception:
+        except:
             UniProt_GeneIDs = [UniProt_fields[GeneID_index]]
 
         for UniProt_GeneID in UniProt_GeneIDs:
-            (GeneID, PrimAC) = (UniProt_GeneID, UniProt_fields[UniProtPrimAC_index])
+            (GeneID,PrimAC) = (UniProt_GeneID, UniProt_fields[UniProtPrimAC_index])
 
-            # If the GeneID is associated with multiple Primary_AC,
+            # If the GeneID is associated with multiple Primary_AC, 
             # it is considered a bad GeneID
             # No GeneID is of the type "-1"
             # So, we assign "-1" as the value to this bad GeneID to avoid using it later
@@ -161,18 +164,18 @@ def Build_UniProtDicts(inUniProt):
         # Populating GeneName_dict
         # Key -> GeneName
         # Value -> Uniprot Primary Accession
-        # GeneNames field in the inFile can contain
+        # GeneNames field in the inFile can contain 
         # a single Gene Name or a comma-seperated
-        # list of Gene Names
+        # list of Gene Names      
         try:
             UniProt_GeneNames = UniProt_fields[GeneName_index].split(',')
-        except Exception:
+        except:
             UniProt_GeneNames = [UniProt_fields[GeneName_index]]
 
         for UniProt_GeneName in UniProt_GeneNames:
-            (GeneName, PrimAC) = (UniProt_GeneName, UniProt_fields[UniProtPrimAC_index])
+            (GeneName,PrimAC) = (UniProt_GeneName, UniProt_fields[UniProtPrimAC_index])
 
-            # If the Gene Name is associated with multiple Primary_AC,
+            # If the Gene Name is associated with multiple Primary_AC, 
             # it is considered a bad Gene Name
             # No Gene Name is of the type "-1"
             # So, we assign "-1" as the value to this bad Gene Name to avoid using it later
@@ -181,38 +184,38 @@ def Build_UniProtDicts(inUniProt):
                     GeneID_dict[GeneName] = "-1"
                 # else: Gene Name is already bad => NOOP
             else:
-                GeneName_dict[GeneName] = PrimAC
+                GeneName_dict[GeneName] = PrimAC        
 
     # Closing the file
     Uniprot_File.close()
 
     return UniprotPrimAC_dict, UniprotSecAC_dict, GeneID_dict, GeneName_dict
 
+###########################################################
 
+# Parses a miTAB 2.5 or 2.7 file
+# Maps the data to UniProt using the above dictionaries
+#
+# For each interaction, grabs the UniProt Primary Accession of the interacting Proteins
+# Also grabs Interaction Detection Method, PMID and Interaction type
+# Ignores interactions if:
+# - UniProt Primary Accessions of either of the proteins cannot be found OR
+# - if PMID is missing OR
+# - if TaxID of both interacting proteins is not '9606' i.e. human
+#
+# Prints to STDOUT in .tsv format by sorting the Uniprot PrimAC
+# The output consists of 5 columns:
+# - Protein A UniProt Primary Accession
+# - Protein B UniProt Primary Accession
+# - Interaction Detection Method
+# - Pubmed Identifier
+# - Interaction Type
 def interaction_parser(args):
-    """
-    # Parses a miTAB 2.5 or 2.7 file
-    Maps the data to UniProt using the above dictionaries
 
-    For each interaction, grabs the UniProt Primary Accession of the interacting Proteins
-    Also grabs Interaction Detection Method, PMID and Interaction type
-    Ignores interactions if:
-    - UniProt Primary Accessions of either of the proteins cannot be found OR
-    - if PMID is missing OR
-    - if TaxID of both interacting proteins is not '9606' i.e. human
-
-    Prints to STDOUT in .tsv format by sorting the Uniprot PrimAC
-    The output consists of 5 columns:
-    - Protein A UniProt Primary Accession
-    - Protein B UniProt Primary Accession
-    - Interaction Detection Method
-    - Pubmed Identifier
-    - Interaction Type
-    """
-
+     # Calling function
     (UniprotPrimAC_dict, UniprotSecAC_dict, GeneID_dict, GeneName_dict) = Build_UniProtDicts(args.inUniProt)
 
-    # Compiling all the regular expressions
+    # Compiling all the regular expressions###
 
     # uniprot ids for protein
     re_uniprot = re.compile('^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')
@@ -223,7 +226,7 @@ def interaction_parser(args):
     re_GeneID_missed = re.compile('^entrez gene/locuslink:(\d+)$')
 
     # Getting UniProt Primary AC using Gene Name if not found using above
-    re_GeneName = re.compile('^(entrez gene.locuslink:|uniprotkb:)([\w\s\_\\\/\:\.\-]+$|[\w\s\_\\\/\:\.\-]+)')
+    re_GeneName = re.compile('^(entrez gene.locuslink:|uniprotkb:)([\w\s\_\\\/\:\.\-]+$|[\w\s\_\\\/\:\.\-]+)') 
 
     # PSI-MI term parser for Interaction Detection Method and Interaction type
     re_psimi = re.compile('^psi-mi:"(MI:\d+)"')
@@ -237,7 +240,7 @@ def interaction_parser(args):
     re_PMID_missed = re.compile('^pubmed:')
 
     # User input Protein-protein Interaction file
-    interaction_file = open(args.inInteraction, encoding="utf-8")
+    interaction_file = open(args.inInteraction,  encoding="utf-8")
 
     # Skip header
     interaction_file.readline()
@@ -248,40 +251,38 @@ def interaction_parser(args):
         line_fields = line.split('\t')
 
         # Initializing variables/accumulators
-        Prots = [',']
+        Prots = ['','']
         IntDetectMethod = ''
         PMID = ''
         Interaction_type = ''
 
-        """
-        Using 'Complex expansion' column (for miTAB 2.7) to eliminate expansion data
-        is not reliable and can sometimes result in the loss of true binary interactions
-        as observed in miTAB 2.7 file retrieved from IntAct (at the time of
-        writing this script. see below example)
-        Example for the interactions between proteins (from IntAct):
-        P81274 & Q14980
-        Interaction Detection Method: 2 hybrid
-        Pubmed:15537540
-        Interaction AC: EBI-624047
-        Expansion: spoke expansion
-        Interaction Detection Method is 2-Hybrid and this is marked as
-        expansion which is most probably incorrect
-
-        In some cases, Affinity Chromatography Technology (ACT) is not marked as
-        expansion, although most of the PPIs determined by ACT
-        correspond to expansion
-        Example (from IntAct):
-        P19784 & P03211
-        Interaction Detection Method: Affinity Chromatography Technology
-        Pubmed: 12783858
-        Interaction AC: EBI-8656048
-        Expansion: Not spoke expansion
-
-        So through private communication with a PPI database,
-        we have set a few criteria to eliminate the expansion data while
-        buliding the Interactome in the Build_Interactome.py script
-        """
-        for protindex in [0, 1]:
+        # Using 'Complex expansion' column (for miTAB 2.7) to eliminate expansion data
+        # is not reliable and can sometimes result in the loss of true binary interactions
+        # as observed in miTAB 2.7 file retrieved from IntAct (at the time of
+        # writing this script. see below example)
+        # Example for the interactions between proteins (from IntAct): 
+        # P81274 & Q14980 
+        # Interaction Detection Method: 2 hybrid 
+        # Pubmed:15537540 
+        # Interaction AC: EBI-624047 
+        # Expansion: spoke expansion
+        # Interaction Detection Method is 2-Hybrid and this is marked as
+        # expansion which is most probably incorrect
+        #
+        # In some cases, Affinity Chromatography Technology (ACT) is not marked as
+        # expansion, although most of the PPIs determined by ACT 
+        # correspond to expansion
+        # Example (from IntAct):
+        # P19784 & P03211 
+        # Interaction Detection Method: Affinity Chromatography Technology
+        # Pubmed: 12783858 
+        # Interaction AC: EBI-8656048
+        # Expansion: Not spoke expansion
+        #
+        # So through private communication with a PPI database,
+        # we have set a few criteria to eliminate the expansion data while
+        # buliding the Interactome in the Build_Interactome.py script
+        for protindex in [0,1]:
             if (re_uniprot.match(line_fields[protindex])):
                 ID = re_uniprot.match(line_fields[protindex]).group(2)
                 # Check if it exists in the dictionary
@@ -304,7 +305,7 @@ def interaction_parser(args):
             # Uniprot AC not found/not primary_AC and GeneID not found,
             # then, look in Alternate ID columns of the interaction_file
             # Stop when the first AltID is recognized (Careful, if multiple altIDs would be found)
-            altIDs = line_fields[2 + protindex].split('|')
+            altIDs = line_fields[2+protindex].split('|')
             for altID in altIDs:
                 if (re_uniprot.match(altID)):
                     ID = re_uniprot.match(altID).group(2)
@@ -320,7 +321,7 @@ def interaction_parser(args):
                         Prots[protindex] = UniprotSecAC_dict[ID]
                         break
                 elif (re_uniprot_missed.match(altID)):
-                    logging.error("AltID " + altID + " is Uniprot Accession but failed to grab it for line:\n", line)
+                    logging.error("AltID "+altID+" is Uniprot Accession but failed to grab it for line:\n", line)
                     sys.exit()
                 elif (re_GeneID.match(altID)):
                     ID = re_GeneID.match(altID).group(1)
@@ -329,37 +330,37 @@ def interaction_parser(args):
                         Prots[protindex] = GeneID_dict[ID]
                         break
                 elif (re_GeneID_missed.match(altID)):
-                    logging.error("AltID " + altID + " is a GeneID but failed to grab it for line:\n", line)
+                    logging.error("AltID "+altID+" is a GeneID but failed to grab it for line:\n", line)
                     sys.exit()
                 # If UniProt PrimAC not found using above,
-                # then find UniProt PrimAC using the Gene name
+                # then find UniProt PrimAC using the Gene name    
                 # In case of miTAB 2.5 format, Gene name can be
                 # present in AltIDs column as well (as seen in BioGRID)
-                # Where as in miTAB 2.7 (as seen in IntAct), both
+                # Where as in miTAB 2.7 (as seen in IntAct), both 
                 # Gene name and Gene name Synonym is present in Alias column
                 # So we check in AltID columns
-                elif re_GeneName.match(altID):
+                elif(re_GeneName.match(altID)):
                     GN_altID = re_GeneName.match(altID).group(2)
                     # Check if it exists in the Gene Name dictionary and isn't bad ie "-1"
                     if GeneName_dict.get(GN_altID, "-1") != "-1":
                         Prots[protindex] = GeneName_dict[GN_altID]
-                        break
+                        break 
                 # else: altID not recognized, look at next altID ie NOOP
-
-            # If UniProt Primary AC not found in the AltID column either,
+            
+            # If UniProt Primary AC not found in the AltID column either, 
             # then look in the Alias(es) column
-            aliasIDs = line_fields[4 + protindex].split('|')
-            for aliasID in aliasIDs:
+            aliasIDs = line_fields[4+protindex].split('|')
+            for aliasID in aliasIDs:  
                 if (re_GeneName.match(aliasID)):
                     GN_aliasID = re_GeneName.match(aliasID).group(2)
                     # Check if it exists in the Gene Name dictionary and isn't bad ie "-1"
                     if GeneName_dict.get(GN_aliasID, "-1") != "-1":
                         Prots[protindex] = GeneName_dict[GN_aliasID]
-                        break
+                        break 
 
         # if either Uniprot PrimAC is not found
         if Prots[0] == '' or Prots[1] == '':
-            continue  # to next line
+            continue # to next line
 
         # if we get here both partners were found, grab the remaining data
 
@@ -399,58 +400,54 @@ def interaction_parser(args):
             continue
 
         # Here we grabbed all the necessary data, print to STDOUT and move on to the next line
-        if Prots[0] < Prots[1]:  # Sorting the PrimAC
+        if Prots[0] < Prots[1]: # Sorting the PrimAC
             interaction_out_line = [Prots[0], Prots[1], IntDetectMethod, PMID, Interaction_type]
         else:
             interaction_out_line = [Prots[1], Prots[0], IntDetectMethod, PMID, Interaction_type]
 
         print("\t".join(interaction_out_line))
-
+        
+    # Closing the file
     interaction_file.close()
 
     logging.info("ALL DONE, completed successfully!")
 
     return
 
+###########################################################
 
+# Taking and handling command-line arguments
 def main():
-    file_parser = argparse.ArgumentParser(description="""
-                                          Map miTAB 2.5 or 2.7 to Uniprot file and print to STDOUT in TSV format.
-                                          -------------------------------------------------------------------------------------------------------
-                                          The output:
-                                          -> UniProt Primary Accession of Protein A
-                                          -> UniProt Primary Accession of Protein B
-                                          -> Interaction Detection Method
-                                          -> Pubmed Identifier
-                                          -> Interaction type
-                                          -----------------------------------------------------------------------------------------------------
-                                          Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
-                                          """,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
+    file_parser = argparse.ArgumentParser(description =
+    """
+-------------------------------------------------------------------------------------------------------
+Program: Parses a miTAB 2.5 or 2.7 file, maps to the uniprot file and prints to STDOUT in tsv format
+-------------------------------------------------------------------------------------------------------
+The output (Human-Human Protein Interaction Experiments) consists of five columns in .tsv format:
+ -> UniProt Primary Accession of Protein A
+ -> UniProt Primary Accession of Protein B
+ -> Interaction Detection Method
+ -> Pubmed Identifier
+ -> Interaction type
+ -----------------------------------------------------------------------------------------------------
+
+ Arguments [defaults] -> Can be abbreviated to shortest unambiguous prefixes
+    """,
+    formatter_class = argparse.RawDescriptionHelpFormatter)
 
     required = file_parser.add_argument_group('Required arguments')
+    optional = file_parser.add_argument_group('Optional arguments')
 
-    required.add_argument('--inInteraction',
-                          metavar="Input File",
-                          dest="inInteraction",
-                          help="Input File Name (protein-protein Interaction file: miTAB 2.5 or 2.7)",
-                          required=True)
-    required.add_argument('--inUniProt',
-                          metavar="Input File",
-                          dest="inUniProt",
-                          help="Uniprot Output File generated by uniprot_parser.py",
-                          required=True)
+    required.add_argument('--inInteraction', metavar = "Input File", dest = "inInteraction", help = 'Input File Name (Protein-protein Interaction file: miTAB 2.5 or 2.7)', required = True)
+    required.add_argument('--inUniProt', metavar = "Input File", dest = "inUniProt", help = 'Uniprot Output File generated by the Uniprot_parser.py', required = True)
 
     args = file_parser.parse_args()
     interaction_parser(args)
 
-
 if __name__ == "__main__":
     # Logging to Standard Error
-    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S',
-                        stream=sys.stderr,
-                        level=logging.DEBUG)
-    logging.addLevelName(logging.INFO, 'I')
+    logging.basicConfig(format = "%(levelname)s %(asctime)s: %(filename)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S', stream = sys.stderr, level = logging.DEBUG)
+    logging.addLevelName(logging.INFO, 'I' )
     logging.addLevelName(logging.ERROR, 'E')
     logging.addLevelName(logging.WARNING, 'W')
     main()

@@ -16,10 +16,9 @@
 # If not, see <https://www.gnu.org/licenses/>.
 ############################################################################################
 
-import logging
 import os
 import sys
-
+import logging
 import pathlib
 
 import argparse
@@ -37,10 +36,9 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
     - causal_genes: dict of causal genes with key=ENSG, value=1
 
     returns:
-    - ranks_left_out: dict with key=causal gene (ENSG), value=rank of this gene
-      when it is left out
+    - ranks_left_out: dict with ranks for left-out causal genes key=ENSG, value=rank
     '''
-    # initialize dict to store left-out scores
+    # initialize dict to store left-out ranks
     ranks_left_out = {}
 
     for left_out in list(causal_genes.keys()):
@@ -50,21 +48,23 @@ def leave_one_out(interactome, adjacency_matrices, causal_genes, alpha):
 
         # save the left-out rank
         results_sorted = sorted(scores.keys(), key=lambda item: scores[item], reverse=True)
-        rank_left_out = results_sorted.index(left_out) + 1  # ranks start at 1
+        rank_left_out = results_sorted.index(left_out) + 1  # + 1 because ranks start at 1 not 0
 
         ranks_left_out[left_out] = rank_left_out
+
+        # add left-out back to causal_genes
         causal_genes[left_out] = 1
 
     return ranks_left_out
 
 
-def main(interactome_file, causal_genes_file, Uniprot_file, patho, alpha, d_max):
+def main(interactome_file, causal_genes_file, uniprot_file, patho, alpha, d_max):
 
     logger.info("Parsing interactome")
     interactome = data_parser.parse_interactome(interactome_file)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    ENSG2gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_Uniprot(Uniprot_file)
+    ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
@@ -91,13 +91,17 @@ if __name__ == "__main__":
     logger = logging.getLogger(script_name)
 
     parser = argparse.ArgumentParser(
-        prog="GBA_centrality.py",
-        description="Calculate leave-one-out for GBA centrality."
+        prog=script_name,
+        description="""
+        Leave-one-out validation for GBA centrality.
+        For each causal gene, the method calculates its rank in the interactome
+        when left-out from the causal gene list.
+        """
     )
 
     parser.add_argument('-i', '--interactome_file', type=pathlib.Path, required=True)
     parser.add_argument('--causal_genes_file', type=pathlib.Path, required=True)
-    parser.add_argument('--Uniprot_file', type=pathlib.Path, required=True)
+    parser.add_argument('--uniprot_file', type=pathlib.Path, required=True)
     parser.add_argument('--patho', default='MMAF', type=str)
     parser.add_argument('--alpha', default=0.5, type=float)
     parser.add_argument('--d_max', default=5, type=int)
@@ -107,7 +111,7 @@ if __name__ == "__main__":
     try:
         main(interactome_file=args.interactome_file,
              causal_genes_file=args.causal_genes_file,
-             Uniprot_file=args.Uniprot_file,
+             uniprot_file=args.uniprot_file,
              patho=args.patho,
              alpha=args.alpha,
              d_max=args.d_max)

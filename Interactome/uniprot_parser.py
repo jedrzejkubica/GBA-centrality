@@ -21,7 +21,7 @@ def parse_uniprot_file(uniprot_file):
     - ENSG (or a comma seperated list)
     - Uniprot Secondary Accession (or a comma seperated list)
     - GeneID (or a comma seperated list)
-    - Gene Name (or a comma seperated list of)
+    - Gene Name (or a comma seperated list)
     """
 
     logging.info("Starting to run")

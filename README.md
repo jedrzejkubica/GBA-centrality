@@ -1,6 +1,6 @@
 > Laboratory TIMC / MAGe Grenoble
 
-# Interactome-TIMC
+# GBA centrality
 
 This repository contains scripts for _GBA (Guilt-by-association) centrality_.
 
@@ -48,34 +48,34 @@ wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.int
 Parse Uniprot
 
 ```
-gunzip -c uniprot_sprot.dat.gz | python scripts/Uniprot_parser.py > Uniprot_output.tsv
+gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_output.tsv
 ```
 
 Parse BioGRID
 
 ```
-python scripts/Interaction_parser.py --inInteraction BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --inUniProt Uniprot_output.tsv > Exp_Biogrid.tsv
+python Interactome/interaction_parser.py --inInteraction BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --inUniProt uniprot_output.tsv > Exp_Biogrid.tsv
 ```
 
 Parse IntAct
 
 ```
-python scripts/Interaction_parser.py --inInteraction intact.txt --inUniProt Uniprot_output.tsv > Exp_Intact.tsv
+python Interactome/interaction_parser.py --inInteraction intact.txt --inUniProt uniprot_output.tsv > Exp_Intact.tsv
 ```
 
 Parse Reactome
 
 ```
-python scripts/Interaction_parser.py --inInteraction reactome.homo_sapiens.interactions.psi-mitab.txt --inUniProt Uniprot_output.tsv > Exp_Reactome.tsv
+python Interactome/interaction_parser.py --inInteraction reactome.homo_sapiens.interactions.psi-mitab.txt --inUniProt uniprot_output.tsv > Exp_Reactome.tsv
 ```
 
 
 ### Step 3. Build the high-quality human interactome
 
 ```
-python scripts/Build_Interactome.py \
+python Interactome/build_interactome.py \
   --inExpFile Exp_Biogrid.tsv Exp_Intact.tsv Exp_Reactome.tsv \
-  --inUniProt Uniprot_output.tsv > Interactome_human.sif
+  --inUniProt uniprot_output.tsv > interactome_human.sif
 ```
 
 
@@ -86,24 +86,24 @@ Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene_name
 
 ## Example usage of _GBA centrality_
 
-As input, GBA centrality takes an interactome SIF file, a Uniprot DAT file, as well as a list of known causal genes for the phenotype of interest.
+As input, GBA centrality takes an interactome SIF file, a Uniprot file, as well as a list of known causal genes for the phenotype of interest.
 
 Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10
 
 ```
-python scripts/GBA_centrality.py \
-  -i input/Interactome_human.sif \
-  --Uniprot_file input/Uniprot_output.tsv \
+python GBA_centrality.py \
+  -i interactome_human.sif \
+  --uniprot_file uniprot_output.tsv \
   --alpha 0.5 \
   --d_max 10 \
   --patho MMAF \
-  1>output/scores.tsv \
-  2>output/log.txt
+  1> output/scores.tsv \
+  2> output/log.txt
 ```
 
 ## Validation of _GBA centrality_
 
-We put scripts and jupyter notebooks for validation in [dev/](dev/).
+We put all code for the validation of GBA centrality in [Validation/](Validation/).
 
 
 ### Python environment

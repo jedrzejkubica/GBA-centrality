@@ -218,26 +218,26 @@ def interaction_parser(args):
     # Compiling all the regular expressions###
 
     # uniprot ids for protein
-    re_uniprot = re.compile('^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')
-    re_uniprot_missed = re.compile('^uniprot')
+    re_uniprot = re.compile(r'^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')
+    re_uniprot_missed = re.compile(r'^uniprot')
 
     # if uniprot AC not found, using GeneID to get corresponding Primary_AC
-    re_GeneID = re.compile('^entrez gene/locuslink:(\d+)$')
-    re_GeneID_missed = re.compile('^entrez gene/locuslink:(\d+)$')
+    re_GeneID = re.compile(r'^entrez gene/locuslink:(\d+)$')
+    re_GeneID_missed = re.compile(r'^entrez gene/locuslink:(\d+)$')
 
     # Getting UniProt Primary AC using Gene Name if not found using above
-    re_GeneName = re.compile('^(entrez gene.locuslink:|uniprotkb:)([\w\s\_\\\/\:\.\-]+$|[\w\s\_\\\/\:\.\-]+)') 
+    re_GeneName = re.compile(r'^(entrez gene.locuslink:|uniprotkb:)([\w\s\_\\\/\:\.\-]+$|[\w\s\_\\\/\:\.\-]+)') 
 
     # PSI-MI term parser for Interaction Detection Method and Interaction type
-    re_psimi = re.compile('^psi-mi:"(MI:\d+)"')
-    re_psimi_missed = re.compile('^psi-mi:')
+    re_psimi = re.compile(r'^psi-mi:"(MI:\d+)"')
+    re_psimi_missed = re.compile(r'^psi-mi:')
 
     # Pubmed Identifiers
-    re_PMID = re.compile('^pubmed:(\d+)$')
+    re_PMID = re.compile(r'^pubmed:(\d+)$')
 
     # some pubmed identifiers are unassigned in Intact (pubmed:unassigned)
-    re_PMID_unassigned = re.compile('^pubmed:unassigned')
-    re_PMID_missed = re.compile('^pubmed:')
+    re_PMID_unassigned = re.compile(r'^pubmed:unassigned')
+    re_PMID_missed = re.compile(r'^pubmed:')
 
     # User input Protein-protein Interaction file
     interaction_file = open(args.inInteraction,  encoding="utf-8")

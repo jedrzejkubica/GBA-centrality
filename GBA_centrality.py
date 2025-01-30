@@ -148,9 +148,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality - a network propagations algorithm for disease gene prioritization. 
+        GBA centrality - a network propagations algorithm for disease gene prioritization.
         The method assigns scores to genes that represent their likelihood of being causal
-        for the phenotype. It takes into account the topology of the protein-protein interaction 
+        for the phenotype. It takes into account the topology of the protein-protein interaction
         network (interactome) and prior knowledge about causal genes for the phenotype of interest.
         """
     )

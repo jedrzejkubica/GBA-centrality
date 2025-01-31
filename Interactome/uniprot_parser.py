@@ -1,9 +1,13 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
 
+import os
 import sys
 import re
 import argparse
 import logging
+
+# set up logger, using inherited config, in case we get called as a module
+logger = logging.getLogger(__name__)
 
 
 def parse_uniprot_file(uniprot_file):
@@ -24,7 +28,7 @@ def parse_uniprot_file(uniprot_file):
     - Gene Name (or a comma seperated list)
     """
 
-    logging.info("Starting to run")
+    logger.info("Starting to run")
 
     uniprot_file = sys.stdin
 
@@ -68,7 +72,7 @@ def parse_uniprot_file(uniprot_file):
                 ACs += '; '
             ACs += re_AC.match(line).group(1)
         elif (re.match(r'^AC\s', line)):
-            logging.error("Missed the AC line: \n" + line)
+            logger.error("Missed the AC line: \n" + line)
             sys.exit()
         elif (re_GN.match(line)):
             GN_line = re_GN.match(line).group(1)
@@ -129,18 +133,18 @@ def parse_uniprot_file(uniprot_file):
                     if geneName not in geneNames:
                         geneNames.append(geneName)
         elif (re.match(r'^GN\s+Name.*', line)):
-            logging.error("Missing Gene Name \n" + ACs + line)
+            logger.error("Missing Gene Name \n" + ACs + line)
             sys.exit()
         elif (re.match(r'^GN\s+Synonyms.*', line)):
-            logging.error("Missing Gene Name Synonym \n" + ACs + line)
+            logger.error("Missing Gene Name Synonym \n" + ACs + line)
             sys.exit()
         elif (re_taxID.match(line)):
             if (taxID != 0):
-                logging.error("Several OX lines for protein: \t" + ACs)
+                logger.error("Several OX lines for protein: \t" + ACs)
                 sys.exit()
             taxID = re_taxID.match(line).group(1)
         elif (re.match(r'^OX\s', line)):
-            logging.error("Missing OX line \n" + line)
+            logger.error("Missing OX line \n" + line)
             sys.exit()
         elif (re_Ensembl.match(line)):
             ENST_match = re_Ensembl.match(line)
@@ -154,12 +158,12 @@ def parse_uniprot_file(uniprot_file):
                 ENSGs.append(ENSG)
 
         elif (re.match(r'^DR\s+Ensembl;', line)):
-            logging.error("Failed to get all the Ensembl IDs \n" + ACs + line)
+            logger.error("Failed to get all the Ensembl IDs \n" + ACs + line)
             sys.exit()
         elif (re_geneID.match(line)):
             geneIDs.append(re_geneID.match(line).group(1))
         elif (re.match(r'^DR\s+GeneID.*', line)):
-            logging.error("Missing GeneIDs \n" + ACs + line)
+            logger.error("Missing GeneIDs \n" + ACs + line)
             sys.exit()
 
         elif (line == '//'):  # '//' == end of the record
@@ -169,20 +173,20 @@ def parse_uniprot_file(uniprot_file):
                     primAC = ACs_split[0]
                     secACs = ','.join(ACs_split[1:])
                 except Exception:
-                    logging.error("Failed to store Uniprot Accession IDs for protein: \t" + ACs)
+                    logger.error("Failed to store Uniprot Accession IDs for protein: \t" + ACs)
                     sys.exit()
 
                 try:
                     geneNames = ','.join(geneNames)
                 except Exception:
-                    logging.error('Failed to store Gene Name for protein: \t' + ACs)
+                    logger.error('Failed to store Gene Name for protein: \t' + ACs)
                     sys.exit()
 
                 try:
                     ENSTs = ','.join(ENSTs)
                     ENSGs = ','.join(ENSGs)
                 except Exception:
-                    logging.error("Failed to store ENST/ENSG for protein: \t" + ACs)
+                    logger.error("Failed to store ENST/ENSG for protein: \t" + ACs)
                     sys.exit()
 
                 try:
@@ -204,35 +208,40 @@ def parse_uniprot_file(uniprot_file):
 
             continue
 
-    logging.info("All done, completed successfully!")
-
-    return
+    logger.info("All done, completed successfully!")
 
 
 def main():
-    file_parser = argparse.ArgumentParser(description="""
-                                          Parse on STDIN a Uniprot file and print to STDOUT in TSV format:
-                                          - Uniprot Primary Accession
-                                          - Taxonomy identifier
-                                          - ENST (or a comma seperated list)
-                                          - ENSG (or a comma seperated list)
-                                          - Uniprot Secondary Accession (or a comma seperated list)
-                                          - GeneID (or a comma seperated list)
-                                          - Gene Name (or a comma seperated list)
-                                          """,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="""
+        Parse on STDIN a Uniprot file and print to STDOUT in TSV format:
+        - Uniprot Primary Accession
+        - Taxonomy identifier
+        - ENST (or a comma seperated list)
+        - ENSG (or a comma seperated list)
+        - Uniprot Secondary Accession (or a comma seperated list)
+        - GeneID (or a comma seperated list)
+        - Gene Name (or a comma seperated list)
+        """)
 
-    file_parser.set_defaults(func=parse_uniprot_file)
-    args = file_parser.parse_args()
+    parser.set_defaults(func=parse_uniprot_file)
+    args = parser.parse_args()
     args.func(args)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s",
+    script_name = os.path.basename(sys.argv[0])
+    # configure logger, sub-modules will inherit this config
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
-                        stream=sys.stderr,
                         level=logging.DEBUG)
-    logging.addLevelName(logging.INFO, 'I')
-    logging.addLevelName(logging.ERROR, 'E')
-    logging.addLevelName(logging.WARNING, 'W')
-    main()
+    # set up logger: we want script name rather than 'root'
+    logger = logging.getLogger(script_name)
+
+    try:
+        main()
+
+    except Exception as e:
+        # details on the issue should be in the exception name, print it to stderr and die
+        sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
+        sys.exit(1)

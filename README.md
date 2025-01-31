@@ -93,7 +93,7 @@ Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=1
 ```
 python GBA_centrality.py \
   -i interactome_human.sif \
-  --uniprot_file uniprot_output.tsv \
+  --uniprot_file uniprot_parsed.tsv \
   --alpha 0.5 \
   --d_max 10 \
   --patho MMAF \
@@ -103,7 +103,7 @@ python GBA_centrality.py \
 
 ## Validation of _GBA centrality_
 
-We put all code for the validation of GBA centrality in [Validation/](Validation/).
+All code for the validation of GBA centrality is in [Validation/](Validation/).
 
 
 ### Python environment

@@ -9,299 +9,209 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import data_parser
 
 
-###########################################################
+def parse_interactions(interactions_parsed_files):
+    """
+    Parse the TSV files from interaction_parser.py with columns:
+    - Protein A Uniprot Primary Accession
+    - Protein B Uniprot Primary Accession
+    - Interaction Detection Method
+    - Pubmed ID
+    - Interaction Type
 
-# Parses the tab-seperated output files
-# produced by the Interaction_parser.py (No headers)
-#
-# Required columns are:
-# - Protein A UniProt PrimAC (column-1)
-# - Protein B UniProt PrimAC (column-2)
-# - Interaction Detection Method (column-3)
-# - Pubmed Identifier (column-4)
-# - Interaction type (column-5)
-#
-# Processes it by filtering based on Interaction Detection Method and Interaction type
-# Final filtering - Each interaction has at least 2 experiments of which
-# at least one should be proven by any binary interaction detection method
-#
-# Returns a list with 5 items (in each sublist):
-# - Protein A UniProt PrimAC,
-# - Protein B UniProt PrimAC,
-# - Publication_Count,
-# - PMID(s) and
-# - Experiment_count
-def UniProtInteractome(inExpFile):
+    Filter on Interaction Detection Method and Interaction Type:
+    each interaction has at least 2 experiments,
+    at least one should be proven by any binary interaction detection method
 
-    logging.info("starting to run")
+    Returns a list with 5 items (in each sublist):
+    - Protein A Uniprot Primary Accession
+    - Protein B Uniprot Primary Accession
+    - Publication count
+    - PubmedID(s)
+    - Experiment count
+    """
 
-    # Dictionary for storing Interacting
-    # Proteins and Pubmed Identifier
-    PPI_PMID_dict = {}
+    logging.info("Starting to run")
 
-    # Dictionary for storing Interacting
-    # Proteins and Interaction Detection Method
-    PPI_IntDetMethod_dict = {}
+    PPI2PubmedID = {}
+    PPI2detectionMethod = {}
+    PPIs = []
 
-    # List of User input PPI interaction experiments file(s)
-    PPIExpFiles = inExpFile
+    for file in interactions_parsed_files:
+        f = open(file)
 
-    # there can be multiple files
-    for file in PPIExpFiles:
+        for line in f:
+            line_split = line.rstrip('\n').split('\t')
 
-        PPIExpFile = open(file)
+            detectionMethod = line_split[2]
+            PubmedIDs = line_split[3]
+            interactionType = line_split[4].rstrip('\n')
 
-        # Data lines
-        for line in PPIExpFile:
+            # keep Interaction Detection Method:
+            # MI:0096 - pull down
+            # MI:0254 - genetic interference
+            # MI:0686 - unspecified method
+            # keep Interaction Type:
+            # MI:0407 - direct interaction
+            # MI:0915 - physical association
+            if detectionMethod not in ['MI:0096', 'MI:0254', 'MI:0686'] and interactionType in ['MI:0407', 'MI:0915']:
+                interactors = line_split[0] + '_' + line_split[1]  # proteinA + proteinB Primary Accessions
 
-            line = line.rstrip('\n')
-
-            ExpPPI_fields = line.split('\t')
-
-            # Filtering out Interactions based on Interaction Detection Method
-            IntDetMethod = ExpPPI_fields[2]
-            # MI:0096 -> pull down
-            # MI:0254 -> genetic interference
-            # MI:0686 -> unspecified method
-
-            # Filtering out Interactions based on Interaction Type
-            IntType = ExpPPI_fields[4].rstrip('\n')
-            # MI:0407 -> direct interaction
-            # MI:0915 -> physical association
-
-            if IntDetMethod not in ['MI:0096', 'MI:0254', 'MI:0686'] and IntType in ['MI:0407', 'MI:0915']:
-                # ExpPPI_fields[0] -> Protein_A_UniprotPrimAC
-                # ExpPPI_fields[1] -> Protein_B_UniprotPrimAC
-                Interactors = ExpPPI_fields[0] + '_' + ExpPPI_fields[1]
-
-                # Key -> UniProt PrimAC of Protein A & B joined together by an '_'
-                # Value -> Pubmed Identifier (PMID) - ExpPPI_fields[3]
-                (Int_key, PMIDs) = (Interactors, ExpPPI_fields[3])
-
-                # Check if the Key exists in PPI_PMID_dict
-                # If yes, then store the values (PMIDs) as a list
-                if PPI_PMID_dict.get(Int_key, False):
-                    # Avoiding duplicate PMIDs
-                    if PMIDs not in PPI_PMID_dict[Int_key]:
-                        PPI_PMID_dict[Int_key].append(PMIDs)
+                # store PubmedIDs as a list
+                # avoid duplications
+                if PPI2PubmedID.get(interactors, False):
+                    if PubmedIDs not in PPI2PubmedID[interactors]:
+                        PPI2PubmedID[interactors].append(PubmedIDs)
                 else:
-                    PPI_PMID_dict[Int_key] = [PMIDs]
+                    PPI2PubmedID[interactors] = [PubmedIDs]
 
-                # Key -> UniProt PrimAC of Protein A & B joined together by an '_'
-                # Value -> Interaction Detection Method - ExpPPI_fields[2]
-                (Int_key, IntDetMeth) = (Interactors, ExpPPI_fields[2])
-
-                if PPI_IntDetMethod_dict.get(Int_key, False):
-                    PPI_IntDetMethod_dict[Int_key].append(IntDetMeth)
+                # avoiding duplications
+                if PPI2detectionMethod.get(interactors, False):
+                    PPI2detectionMethod[interactors].append(detectionMethod)
                 else:
-                    PPI_IntDetMethod_dict[Int_key] = [IntDetMeth]
+                    PPI2detectionMethod[interactors] = [detectionMethod]
 
-        # Closing the file
-        PPIExpFile.close()
+        f.close()
 
-    # Initializing output list
-    Uniprot_Interactome_list = []
+    for interactors in PPI2PubmedID:
+        # keep PPI if at least one experiment has been proven by binary interaction method;
+        # remove PPIs that have been proved only by Affintity Chromatography Technology (ACT) "MI:0004"
+        if any(exp != "MI:0004" for exp in PPI2detectionMethod[interactors]):
+            (proteinA, proteinB) = interactors.split('_')
 
-    # Processing the dictionaries and returning a list
-    # Since both the dictionaries have the same keys,
-    # We can use the keys from PPI_PMID_dict to iterate through PPI_IntDetMethod_dict
-    for Int_key in PPI_PMID_dict:
+            PubmedID = ', '.join(PPI2PubmedID[interactors])
+            PubmedID_count = len(PPI2PubmedID[interactors])
+            experiment_count = len(PPI2detectionMethod[interactors])
 
-        # Checking if at least one of the experiments for a given interaction has been proven
-        # by any binary interaction method i.e. Other than Affintity Chromatography Technology (ACT) - 'MI:0004'
-        # Used to eliminate PPIs that have been proved ONLY by using ACT
-        if any(value != 'MI:0004' for value in PPI_IntDetMethod_dict[Int_key]):
-            Proteins = Int_key.split('_')
-            Protein_A = Proteins[0]
-            Protein_B = Proteins[1]
+            if experiment_count >= 2:
+                out_line = [proteinA, proteinB, str(PubmedID_count), PubmedID, str(experiment_count)]
+                PPIs.append(out_line)
 
-            Pubmed_Identifier = ', '.join(PPI_PMID_dict[Int_key])
-            PMID_count = len(PPI_PMID_dict[Int_key])
-            Exp_count = len(PPI_IntDetMethod_dict[Int_key])
-
-            if Exp_count >= 2:
-                interaction_out_line = [Protein_A, Protein_B, str(PMID_count), Pubmed_Identifier, str(Exp_count)]
-                Uniprot_Interactome_list.append(interaction_out_line)
-
-    return Uniprot_Interactome_list
+    return PPIs
 
 
-###########################################################
+def get_PPI_interactors(PPIs):
+    """
+    Parses the PPI list returned by parse_interactions():
+    Each sublist must contain:
+    - Uniprot Primary Accession of protein A
+    - Uniprot Primary Accession of protein B
 
-# Parses the Uniprot_Interactome_list returned by
-# the function UniProtInteractome
-#
-# Required items in each sublist:
-# UniProt Primary Accession of Protein A (first item)
-# UniProt Primary Accession of Protein B (second item)
-#
-# Returns 2 dictionaries
-# First dictionary contains:
-# - key: Protein A; Value: List of interactors
-# Second dictionary contains:
-# - key: Protein B; Value: List of interactors
-def Interactome_dict(Uniprot_Interactome_list):
+    Returns:
+    - proteinA2interactors: dict with key=proteinA Uniprot Accession, value=list of proteinA interactors
+    - proteinB2interactors: dict with key=proteinB Uniprot Accession, value=list of proteinB interactors
+    """
 
-    # Dictionaries to store interacting proteins
-    # In ProtA_dict, key -> Protein A; Value -> Protein B
-    # In ProtB_dict, key -> Protein B; Value -> Protein A
-    ProtA_dict = {}
-    ProtB_dict = {}
+    proteinA2interactors = {}
+    proteinB2interactors = {}
 
-    # Data lines
-    for data in Uniprot_Interactome_list:
-
-        # checking self-interaction
-        if data[0] != data[1]:
-            # Check if the Key(ProtA) exists in ProtA_dict
-            # If yes, then append the interctor to
-            # the list of values (Interactors)
-            if ProtA_dict.get(data[0], False):
-                ProtA_dict[data[0]].append(data[1])
-            else:
-                ProtA_dict[data[0]] = [data[1]]
-
-            # Check if the Key(ProtB) exists in ProtB_dict
-            # If yes, then append the interctor to
-            # the list of values (Interactors)
-            if ProtB_dict.get(data[1], False):
-                ProtB_dict[data[1]].append(data[0])
-            else:
-                ProtB_dict[data[1]] = [data[0]]
-
-    return ProtA_dict, ProtB_dict
-
-
-###########################################################
-
-# Parses the ProtA_dict & ProtB_dict dictionaries
-# returned by the function: Interactome_dict
-#
-# Checks if a protein is hub/sticky protein
-# The criteria for considering a given protein
-# as a hub is if it interacts with > 120 proteins
-# This number is based on the degree distribution
-# of all the proteins in the entire high-quality Interactome
-# before eliminating hub/sticky proteins
-#
-# Returns a dictionary:
-# - Key: UniProt Primary Accession of the Hub protein
-# - Value: 1
-def getHubProteins(ProtA_dict, ProtB_dict):
-
-    # Initializing dictionary to store hub proteins
-    HubProteins = {}
-
-    # Checking the number of Interactors for a given protein
-    for protein in ProtA_dict:
-        # Get the no. of Interactors
-        InteractorsCount_ProtA_dict = len(ProtA_dict[protein])
-        # Check if this protein is also
-        # present in ProtB_dict
-        if protein in ProtB_dict:
-            InteractorsCount_ProtB_dict = 0
-            # If present, loop through each interactor to
-            # make sure that the Interactors
-            # for the current protein in ProtB_dict was not already seen
-            # in the Interactor list of ProtA_dict
-            for interactor in ProtB_dict[protein]:
-                if interactor not in ProtA_dict[protein]:
-                    InteractorsCount_ProtB_dict += 1
-            Total_InteractorsCount = InteractorsCount_ProtA_dict + InteractorsCount_ProtB_dict
-        # if the protien not present in ProtB_dict
-        # simply get the Interactors count from ProtA_dict
-        else:
-            Total_InteractorsCount = InteractorsCount_ProtA_dict
-
-        # If the protein has > 120 Interactors
-        # it is considered a hub/sticky protein
-        # append it to the HubProteins list
-        if Total_InteractorsCount > 120:
-            HubProteins[protein] = 1
-
-    # Checking the interactor count of proteins
-    # present only in ProtB_dict
-    for protein in ProtB_dict:
-        if protein not in ProtA_dict:
-            # checking for Hub protein
-            if len(ProtB_dict[protein]) > 120:
-                HubProteins[protein] = 1
-
-    return HubProteins
-
-
-###########################################################
-
-# Parses the Uniprot_Interactome_list
-# returned by the function: UniProtInteractome()
-# and the dictionaries returned by ParseUniprot()
-#
-# Prints to STDOUT in SIF format
-# Output consists of 2 columns:
-# - ENSG of Protein A
-# - "pp" for "protein-protein interaction"
-# - ENSG of Protein B
-#
-# Note: Hub proteins and self-loops are removed
-def Interactome_Uniprot2ENSG(args):
-
-    # Calling the functions
-    Uniprot_Interactome_list = UniProtInteractome(args.inExpFile)
-    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.inUniProt)
-    (ProtA_dict, ProtB_dict) = Interactome_dict(Uniprot_Interactome_list)
-    HubProteins = getHubProteins(ProtA_dict, ProtB_dict)
-
-    for sublist in Uniprot_Interactome_list:
-        proteinA = sublist[0]
-        proteinB = sublist[1]
-
-        # Removing hub/sticky proteins
-        if (proteinA in HubProteins) or (proteinB in HubProteins):
+    for PPI in PPIs:
+        # skip self-interaction
+        if PPI[0] == PPI[1]:
             continue
         else:
+            if proteinA2interactors.get(PPI[0], False):
+                proteinA2interactors[PPI[0]].append(PPI[1])
+            else:
+                proteinA2interactors[PPI[0]] = [PPI[1]]
 
+            if proteinB2interactors.get(PPI[1], False):
+                proteinB2interactors[PPI[1]].append(PPI[0])
+            else:
+                proteinB2interactors[PPI[1]] = [PPI[0]]
+
+    return proteinA2interactors, proteinB2interactors
+
+
+def get_protein_hubs(proteinA2interactors, proteinB2interactors):
+    """
+    Parses proteinA2interactors and proteinB2interactors from get_PPI_interactors().
+
+    Checks if a protein is a hub (if it has >120 interactions).
+
+    Returns a dictionary:
+    - protein_hubs: dict with key=Uniprot Accession, value=1 if hub
+    """
+
+    proteinHubs = {}
+
+    for protein in proteinA2interactors:
+        intCountProteinA = len(proteinA2interactors[protein])
+        if protein in proteinB2interactors:
+            intCountProteinB = 0
+            # avoid duplicated interaction count for protein A and protein B
+            for interactor in proteinB2interactors[protein]:
+                if interactor not in proteinA2interactors[protein]:
+                    intCountProteinB += 1
+            intCount = intCountProteinA + intCountProteinB
+        else:
+            intCount = intCountProteinA
+
+        if intCount > 120:
+            proteinHubs[protein] = 1
+
+    for protein in proteinB2interactors:
+        if protein not in proteinA2interactors:
+            if len(proteinB2interactors[protein]) > 120:
+                proteinHubs[protein] = 1
+
+    return proteinHubs
+
+
+def Interactome_Uniprot2ENSG(args):
+    """
+    Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
+
+    Print interactome to STDOUT in SIF format:
+    - ENSG of protein A
+    - "pp" for "protein-protein interaction"
+    - ENSG of protein B
+    """
+
+    PPIs = parse_interactions(args.interactions_parsed_files)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.uniprot_file)
+
+    (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)
+    proteinHubs = get_protein_hubs(proteinA2interactors, proteinB2interactors)
+
+    for PPI in PPIs:
+        proteinA = PPI[0]
+        proteinB = PPI[1]
+
+        # remove protein hubs
+        if (proteinA in proteinHubs) or (proteinB in proteinHubs):
+            continue
+        else:
             if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
-                # Removing self-loops
+                # remove self-loops
                 if proteinA == proteinB:
                     continue
                 else:
-                    ENSG_Interactome_out = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
-                    print('\t'.join(ENSG_Interactome_out))
+                    out_line = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
+                    print('\t'.join(out_line))
 
-    logging.info("ALL DONE, completed successfully!")
+    logging.info("All done, completed successfully!")
 
     return
 
 
-###########################################################
-
-# Taking and handling command-line arguments
 def main():
     file_parser = argparse.ArgumentParser(description="""
-    --------------------------------------------------------------------------------------------------
-    Parses the output file(s) produced by Interaction_parser.py
-    and uniprot_output.tsv produced by uniprot_parser.py
-    to produce a high-quality interactome (ie, no hubs, no self-loops).
-    --------------------------------------------------------------------------------------------------
-    The output (high-quality interactome) consists of three columns in SIF format:
-    - ENSG of Protein A
-    - "pp" for "protein-protein interaction"
-    - ENSG of Protein B
-    --------------------------------------------------------------------------------------------------
-    """, formatter_class=argparse.RawDescriptionHelpFormatter)
+                                          Parses the output file(s) produced by interaction_parser.py
+                                          and uniprot_parsed.tsv produced by uniprot_parser.py
+                                          to produce a high-quality interactome (ie, no hubs and no self-loops)
+                                          in SIF format:
+                                          - ENSG of Protein A
+                                          - "pp" for "protein-protein interaction"
+                                          - ENSG of Protein B
+                                          """,
+                                          formatter_class=argparse.RawDescriptionHelpFormatter)
 
     required = file_parser.add_argument_group('Required arguments')
 
-    required.add_argument('--inExpFile',
-                          metavar="Input File",
-                          dest="inExpFile",
+    required.add_argument('--interactions_parsed_files',
                           nargs='+',
-                          help='Output files produced by Interaction_parser.py',
                           required=True)
-    required.add_argument('--inUniProt',
-                          metavar="Input File",
-                          dest="inUniProt",
-                          help='Uniprot Primary Accession File generated by uniprot_parser.py',
+    required.add_argument('--uniprot_file',
                           required=True)
 
     args = file_parser.parse_args()

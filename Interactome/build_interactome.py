@@ -90,75 +90,7 @@ def parse_interactions(interactions_parsed_files):
     return PPIs
 
 
-def get_PPI_interactors(PPIs):
-    """
-    Parses the PPI list returned by parse_interactions():
-    Each sublist must contain:
-    - Uniprot Primary Accession of protein A
-    - Uniprot Primary Accession of protein B
-
-    Returns:
-    - proteinA2interactors: dict with key=proteinA Uniprot Accession, value=list of proteinA interactors
-    - proteinB2interactors: dict with key=proteinB Uniprot Accession, value=list of proteinB interactors
-    """
-
-    proteinA2interactors = {}
-    proteinB2interactors = {}
-
-    for PPI in PPIs:
-        # skip self-interaction
-        if PPI[0] == PPI[1]:
-            continue
-        else:
-            if proteinA2interactors.get(PPI[0], False):
-                proteinA2interactors[PPI[0]].append(PPI[1])
-            else:
-                proteinA2interactors[PPI[0]] = [PPI[1]]
-
-            if proteinB2interactors.get(PPI[1], False):
-                proteinB2interactors[PPI[1]].append(PPI[0])
-            else:
-                proteinB2interactors[PPI[1]] = [PPI[0]]
-
-    return proteinA2interactors, proteinB2interactors
-
-
-def get_protein_hubs(proteinA2interactors, proteinB2interactors):
-    """
-    Parses proteinA2interactors and proteinB2interactors from get_PPI_interactors().
-
-    Checks if a protein is a hub (if it has >120 interactions).
-
-    Returns a dictionary:
-    - protein_hubs: dict with key=Uniprot Accession, value=1 if hub
-    """
-
-    proteinHubs = {}
-
-    for protein in proteinA2interactors:
-        intCountProteinA = len(proteinA2interactors[protein])
-        if protein in proteinB2interactors:
-            intCountProteinB = 0
-            # avoid duplicated interaction count for protein A and protein B
-            for interactor in proteinB2interactors[protein]:
-                if interactor not in proteinA2interactors[protein]:
-                    intCountProteinB += 1
-            intCount = intCountProteinA + intCountProteinB
-        else:
-            intCount = intCountProteinA
-
-        if intCount > 120:
-            proteinHubs[protein] = 1
-
-    for protein in proteinB2interactors:
-        if protein not in proteinA2interactors:
-            if len(proteinB2interactors[protein]) > 120:
-                proteinHubs[protein] = 1
-
-    return proteinHubs
-
-
-def save_interactome(PPIs, proteinHubs, Uniprot2ENSG):
+def save_interactome(PPIs, Uniprot2ENSG):
     """
     Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
 
@@ -171,17 +103,13 @@ def save_interactome(PPIs, proteinHubs, Uniprot2ENSG):
         proteinA = PPI[0]
         proteinB = PPI[1]
 
-        # remove protein hubs
-        if (proteinA in proteinHubs) or (proteinB in proteinHubs):
-            continue
-        else:
-            if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
-                # remove self-loops
-                if proteinA == proteinB:
-                    continue
-                else:
-                    out_line = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
-                    print('\t'.join(out_line))
+        if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
+            # remove self-loops
+            if proteinA == proteinB:
+                continue
+            else:
+                out_line = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
+                print('\t'.join(out_line))
 
 
 def main(interactions_parsed_files, uniprot_file):
@@ -192,11 +120,8 @@ def main(interactions_parsed_files, uniprot_file):
     logger.info("Parsing Uniprot file")
     ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
-    (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)
-    proteinHubs = get_protein_hubs(proteinA2interactors, proteinB2interactors)
-
     logger.info("Printing interactome")
-    save_interactome(PPIs, proteinHubs, Uniprot2ENSG)
+    save_interactome(PPIs, Uniprot2ENSG)
 
     logger.info("Done!")
 

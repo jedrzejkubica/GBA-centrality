@@ -8,6 +8,9 @@ import logging
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import data_parser
 
+# set up logger, using inherited config, in case we get called as a module
+logger = logging.getLogger(__name__)
+
 
 def parse_interactions(interactions_parsed_files):
     """
@@ -185,6 +188,8 @@ def main(interactions_parsed_files, uniprot_file):
 
     logger.info("Parsing interaction files")
     PPIs = parse_interactions(interactions_parsed_files)
+
+    logger.info("Parsing Uniprot file")
     ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)

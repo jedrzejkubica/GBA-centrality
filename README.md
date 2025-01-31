@@ -48,25 +48,25 @@ wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.int
 Parse Uniprot
 
 ```
-gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_output.tsv
+gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_parsed.tsv
 ```
 
 Parse BioGRID
 
 ```
-python Interactome/interaction_parser.py --inInteraction BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --inUniProt uniprot_output.tsv > Exp_Biogrid.tsv
+python Interactome/interaction_parser.py --interaction_file BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --uniprot_file uniprot_output.tsv > interactions_Biogrid.tsv
 ```
 
 Parse IntAct
 
 ```
-python Interactome/interaction_parser.py --inInteraction intact.txt --inUniProt uniprot_output.tsv > Exp_Intact.tsv
+python Interactome/interaction_parser.py --interaction_file intact.txt --uniprot_file uniprot_output.tsv > interactions_Intact.tsv
 ```
 
 Parse Reactome
 
 ```
-python Interactome/interaction_parser.py --inInteraction reactome.homo_sapiens.interactions.psi-mitab.txt --inUniProt uniprot_output.tsv > Exp_Reactome.tsv
+python Interactome/interaction_parser.py --interaction_file reactome.homo_sapiens.interactions.psi-mitab.txt --uniprot_file uniprot_output.tsv > interactions_Reactome.tsv
 ```
 
 
@@ -74,8 +74,8 @@ python Interactome/interaction_parser.py --inInteraction reactome.homo_sapiens.i
 
 ```
 python Interactome/build_interactome.py \
-  --inExpFile Exp_Biogrid.tsv Exp_Intact.tsv Exp_Reactome.tsv \
-  --inUniProt uniprot_output.tsv > interactome_human.sif
+  --interactions_parsed_files interactions_Biogrid.tsv interactions_Intact.tsv interactions_Reactome.tsv \
+  --uniprot_file uniprot_parsed.tsv > interactome_human.sif
 ```
 
 

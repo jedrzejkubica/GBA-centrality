@@ -157,7 +157,7 @@ def get_protein_hubs(proteinA2interactors, proteinB2interactors):
     return proteinHubs
 
 
-def Interactome_Uniprot2ENSG(args):
+def save_interactome(PPIs, proteinHubs, Uniprot2ENSG):
     """
     Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
 
@@ -166,13 +166,6 @@ def Interactome_Uniprot2ENSG(args):
     - "pp" for "protein-protein interaction"
     - ENSG of protein B
     """
-
-    PPIs = parse_interactions(args.interactions_parsed_files)
-    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.uniprot_file)
-
-    (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)
-    proteinHubs = get_protein_hubs(proteinA2interactors, proteinB2interactors)
-
     for PPI in PPIs:
         proteinA = PPI[0]
         proteinB = PPI[1]
@@ -191,40 +184,50 @@ def Interactome_Uniprot2ENSG(args):
 
     logging.info("All done, completed successfully!")
 
-    return
-
 
 def main():
-    file_parser = argparse.ArgumentParser(description="""
-                                          Parses the output file(s) produced by interaction_parser.py
-                                          and uniprot_parsed.tsv produced by uniprot_parser.py
-                                          to produce a high-quality interactome (ie, no hubs and no self-loops)
-                                          in SIF format:
-                                          - ENSG of Protein A
-                                          - "pp" for "protein-protein interaction"
-                                          - ENSG of Protein B
-                                          """,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    required = file_parser.add_argument_group('Required arguments')
+    logger.info("Parsing interaction files")
+    PPIs = parse_interactions(args.interactions_parsed_files)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.uniprot_file)
 
-    required.add_argument('--interactions_parsed_files',
-                          nargs='+',
-                          required=True)
-    required.add_argument('--uniprot_file',
-                          required=True)
+    (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)
+    proteinHubs = get_protein_hubs(proteinA2interactors, proteinB2interactors)
 
-    args = file_parser.parse_args()
-    Interactome_Uniprot2ENSG(args)
+    save_interactome(PPIs, proteinHubs, Uniprot2ENSG)
 
 
 if __name__ == "__main__":
-    # Logging to Standard Error
-    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s",
+    script_name = os.path.basename(sys.argv[0])
+    # configure logging, sub-modules will inherit this config
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
-                        stream=sys.stderr,
                         level=logging.DEBUG)
-    logging.addLevelName(logging.INFO, 'I')
-    logging.addLevelName(logging.ERROR, 'E')
-    logging.addLevelName(logging.WARNING, 'W')
-    main()
+    # set up logger: we want script name rather than 'root'
+    logger = logging.getLogger(script_name)
+
+    parser = argparse.ArgumentParser(
+        prog=script_name,
+        description="""
+        Parses the output file(s) produced by interaction_parser.py
+        and uniprot_parsed.tsv produced by uniprot_parser.py
+        to produce a high-quality interactome (ie, no hubs and no self-loops)
+        in SIF format:
+        - ENSG of Protein A
+        - "pp" for "protein-protein interaction"
+        - ENSG of Protein B
+        """)
+
+    parser.add_argument('--interactions_parsed_files', nargs='+', required=True)
+    parser.add_argument('--uniprot_file', required=True)
+
+    args = parser.parse_args()
+
+    try:
+        main(interactions_parsed_files=args.interactions_parsed_files,
+             uniprot_file=args.uniprot_file)
+
+    except Exception as e:
+        # details on the issue should be in the exception name, print it to stderr and die
+        sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
+        sys.exit(1)

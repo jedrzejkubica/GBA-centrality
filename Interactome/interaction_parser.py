@@ -1,9 +1,13 @@
 # This script was cloned from git@github.com:manojmw/grexome-TIMC-Secondary.git
 
+import os
 import sys
 import re
 import argparse
 import logging
+
+# set up logger, using inherited config, in case we get called as a module
+logger = logging.getLogger(__name__)
 
 
 def parse_uniprot_file(uniprot_file):
@@ -21,8 +25,6 @@ def parse_uniprot_file(uniprot_file):
     - geneID2primAC: key=GeneID, value=Uniprot Primary Accession
     - geneName2primAC: key=Gene Name, value=Uniprot Primary Accession
     """
-
-    logging.info("Starting to run")
 
     primAC2taxID = {}
     secAC2primAC = {}
@@ -49,19 +51,19 @@ def parse_uniprot_file(uniprot_file):
             geneName_idx = i
 
     if not primAC_idx >= 0:
-        logging.error("Missing required column title 'Primary_AC' in the file: \n" + uniprot_file)
+        logger.error("Missing required column title 'Primary_AC' in the file: \n" + uniprot_file)
         sys.exit()
     elif not taxID_idx >= 0:
-        logging.error("Missing required column title 'TaxID' in the file: \n" + uniprot_file)
+        logger.error("Missing required column title 'TaxID' in the file: \n" + uniprot_file)
         sys.exit()
     elif not secAC_idx >= 0:
-        logging.error("Missing required column title 'Secondary_ACs' in the file: \n" + uniprot_file)
+        logger.error("Missing required column title 'Secondary_ACs' in the file: \n" + uniprot_file)
         sys.exit()
     elif not geneID_idx >= 0:
-        logging.error("Missing required column title 'GeneIDs' in the file: \n" + uniprot_file)
+        logger.error("Missing required column title 'GeneIDs' in the file: \n" + uniprot_file)
         sys.exit()
     elif not geneName_idx >= 0:
-        logging.error("Missing required column title 'GeneNames' in the file: \n" + uniprot_file)
+        logger.error("Missing required column title 'GeneNames' in the file: \n" + uniprot_file)
         sys.exit()
 
     for line in f:
@@ -122,9 +124,9 @@ def parse_uniprot_file(uniprot_file):
     return primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC
 
 
-def parse_interaction_file(args):
+def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC):
     """
-    Map a miTAB 2.5 or 2.7 file to Uniprot file.
+    Map a miTAB 2.5 or 2.7 file to output from parse_uniprot_file().
 
     For each interaction, grab Primary Accessions of interacting proteins,
     interaction detection method, PubmedID and interaction type.
@@ -140,7 +142,6 @@ def parse_interaction_file(args):
     - Pubmed ID
     - Interaction Type
     """
-    (primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC) = parse_uniprot_file(args.uniprot_file)
 
     re_uniprot = re.compile(r'^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')  # protein Uniprot IDs
     re_uniprot_missed = re.compile(r'^uniprot')
@@ -161,7 +162,7 @@ def parse_interaction_file(args):
     re_PubmedID_unassigned = re.compile(r'^pubmed:unassigned')  # some Pubmed IDs are unassigned in IntAct
     re_PubmedID_missed = re.compile(r'^pubmed:')
 
-    interaction_file = open(args.interaction_file, encoding="utf-8")
+    interaction_file = open(interaction_file)
     interaction_file.readline()
 
     for line in interaction_file:
@@ -196,7 +197,7 @@ def parse_interaction_file(args):
                     proteins[protein_idx] = ID
                     continue
             elif (re_uniprot_missed.match(line_split[protein_idx])):
-                logging.error("ID is a Uniprot Accession but failed to grab it for the line:\n", line)
+                logger.error("ID is a Uniprot Accession but failed to grab it for the line:\n", line)
                 sys.exit()
             elif (re_geneID.match(line_split[protein_idx])):
                 ID = re_geneID.match(line_split[protein_idx]).group(1)
@@ -205,7 +206,7 @@ def parse_interaction_file(args):
                     proteins[protein_idx] = geneID2primAC[ID]
                     continue
             elif (re_geneID_missed.match(line_split[protein_idx])):
-                logging.error("ID is a GeneID but failed to grab it for the line:\n", line)
+                logger.error("ID is a GeneID but failed to grab it for the line:\n", line)
                 sys.exit()
 
             # if Uniprot AC and GeneID not found,
@@ -225,7 +226,7 @@ def parse_interaction_file(args):
                         proteins[protein_idx] = secAC2primAC[ID]
                         break
                 elif (re_uniprot_missed.match(altID)):
-                    logging.error(altID + " is a Uniprot Accession but failed to grab it for line:\n", line)
+                    logger.error(altID + " is a Uniprot Accession but failed to grab it for line:\n", line)
                     sys.exit()
                 elif (re_geneID.match(altID)):
                     ID = re_geneID.match(altID).group(1)
@@ -234,7 +235,7 @@ def parse_interaction_file(args):
                         proteins[protein_idx] = geneID2primAC[ID]
                         break
                 elif (re_geneID_missed.match(altID)):
-                    logging.error("alternativeID " + altID + " is a GeneID but failed to grab it for line:\n", line)
+                    logger.error("alternativeID " + altID + " is a GeneID but failed to grab it for line:\n", line)
                     sys.exit()
                 # if Uniprot Primary not found using above, then it using gene name:
                 # in miTAB 2.5, gene name can be in alternativeIDs column;
@@ -262,7 +263,7 @@ def parse_interaction_file(args):
         if re_psimi.match(line_split[6]):
             detectionMethod = re_psimi.match(line_split[6]).group(1)
         elif re_psimi_missed.match(line_split[6]):
-            logging.error("Failed to grab Interaction Detection Method for line:\n", line)
+            logger.error("Failed to grab Interaction Detection Method for line:\n", line)
             sys.exit()
 
         # grab PubmedID, some include additional fields
@@ -274,14 +275,14 @@ def parse_interaction_file(args):
             elif (re_PubmedID_unassigned.match(PubmedID_entry)):
                 continue
             elif (re_PubmedID_missed.match(PubmedID_entry)):
-                logging.error("Failed to grab PubmedID for line:\n", line)
+                logger.error("Failed to grab PubmedID for line:\n", line)
                 sys.exit()
 
         # grab Interaction Type
         if (re_psimi.match(line_split[11])):
             interactionType = re_psimi.match(line_split[11]).group(1)
         elif (re_psimi_missed.match(line_split[11])):
-            logging.error("Failed to grab Interaction Type for line:\n", line)
+            logger.error("Failed to grab Interaction Type for line:\n", line)
             sys.exit()
 
         # if no PubmedID, skip
@@ -301,40 +302,48 @@ def parse_interaction_file(args):
 
     interaction_file.close()
 
-    logging.info("All done, completed successfully!")
 
-    return
+def main(interaction_file, uniprot_file):
 
+    logger.info("Parsing Uniprot file")
+    (primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC) = parse_uniprot_file(uniprot_file)
 
-def main():
-    file_parser = argparse.ArgumentParser(description="""
-                                          Parse a miTAB 2.5/2.7 file, then map to Uniprot file
-                                          and print to STDOUT in the TSV format:
-                                          - Uniprot Primary Accession of Protein A
-                                          - Uniprot Primary Accession of Protein B
-                                          - Interaction Detection Method
-                                          - Pubmed Identifier
-                                          - Interaction type
-                                          """,
-                                          formatter_class=argparse.RawDescriptionHelpFormatter)
+    logger.info("Parsing interaction file")
+    parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC)
 
-    required = file_parser.add_argument_group("Required arguments")
-
-    required.add_argument("--interaction_file",
-                          required=True)
-    required.add_argument("--uniprot_file",
-                          required=True)
-
-    args = file_parser.parse_args()
-    parse_interaction_file(args)
+    logger.info("Done!")
 
 
 if __name__ == "__main__":
-    # Logging to Standard Error
-    logging.basicConfig(format="%(levelname)s %(asctime)s: %(filename)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
-                        stream=sys.stderr,
+    script_name = os.path.basename(sys.argv[0])
+    # configure logging, sub-modules will inherit this config
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
                         level=logging.DEBUG)
-    logging.addLevelName(logging.INFO, "I")
-    logging.addLevelName(logging.ERROR, "E")
-    logging.addLevelName(logging.WARNING, "W")
-    main()
+    # set up logger: we want script name rather than 'root'
+    logger = logging.getLogger(script_name)
+
+    parser = argparse.ArgumentParser(
+        description="""
+        Parse a miTAB 2.5/2.7 file, then map to Uniprot file
+        and print to STDOUT in the TSV format:
+        - Uniprot Primary Accession of Protein A
+        - Uniprot Primary Accession of Protein B
+        - Interaction Detection Method
+        - Pubmed Identifier
+        - Interaction type
+        """)
+
+    parser.add_argument("--interaction_file", required=True)
+    parser.add_argument("--uniprot_file", required=True)
+
+    args = parser.parse_args()
+
+    try:
+        main(interaction_file=args.interaction_file,
+             uniprot_file=args.uniprot_file)
+
+    except Exception as e:
+        # details on the issue should be in the exception name, print it to stderr and die
+        sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
+        sys.exit(1)

@@ -30,8 +30,6 @@ def parse_interactions(interactions_parsed_files):
     - Experiment count
     """
 
-    logging.info("Starting to run")
-
     PPI2PubmedID = {}
     PPI2detectionMethod = {}
     PPIs = []
@@ -182,19 +180,20 @@ def save_interactome(PPIs, proteinHubs, Uniprot2ENSG):
                     out_line = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
                     print('\t'.join(out_line))
 
-    logging.info("All done, completed successfully!")
 
-
-def main():
+def main(interactions_parsed_files, uniprot_file):
 
     logger.info("Parsing interaction files")
-    PPIs = parse_interactions(args.interactions_parsed_files)
-    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(args.uniprot_file)
+    PPIs = parse_interactions(interactions_parsed_files)
+    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     (proteinA2interactors, proteinB2interactors) = get_PPI_interactors(PPIs)
     proteinHubs = get_protein_hubs(proteinA2interactors, proteinB2interactors)
 
+    logger.info("Printing interactome")
     save_interactome(PPIs, proteinHubs, Uniprot2ENSG)
+
+    logger.info("Done!")
 
 
 if __name__ == "__main__":

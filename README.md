@@ -54,19 +54,19 @@ gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_
 Parse BioGRID
 
 ```
-python Interactome/interaction_parser.py --interaction_file BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --uniprot_file uniprot_output.tsv > interactions_Biogrid.tsv
+python Interactome/interaction_parser.py --interaction_file BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --uniprot_file uniprot_parsed.tsv > interactions_Biogrid.tsv
 ```
 
 Parse IntAct
 
 ```
-python Interactome/interaction_parser.py --interaction_file intact.txt --uniprot_file uniprot_output.tsv > interactions_Intact.tsv
+python Interactome/interaction_parser.py --interaction_file intact.txt --uniprot_file uniprot_parsed.tsv > interactions_Intact.tsv
 ```
 
 Parse Reactome
 
 ```
-python Interactome/interaction_parser.py --interaction_file reactome.homo_sapiens.interactions.psi-mitab.txt --uniprot_file uniprot_output.tsv > interactions_Reactome.tsv
+python Interactome/interaction_parser.py --interaction_file reactome.homo_sapiens.interactions.psi-mitab.txt --uniprot_file uniprot_parsed.tsv > interactions_Reactome.tsv
 ```
 
 
@@ -81,12 +81,12 @@ python Interactome/build_interactome.py \
 
 ### Step 4. Prepare a list of causal genes
 
-Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene_name, pathologyID.
+Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene name, pathology
 
 
-## Example usage of _GBA centrality_
+## How to run _GBA centrality_
 
-As input, GBA centrality takes an interactome SIF file, a Uniprot file, as well as a list of known causal genes for the phenotype of interest.
+As input, GBA centrality takes an interactome SIF file, a Uniprot file and a TSV file with known causal genes for the phenotype of interest.
 
 Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10
 
@@ -94,6 +94,7 @@ Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=1
 python GBA_centrality.py \
   -i interactome_human.sif \
   --uniprot_file uniprot_parsed.tsv \
+  --causal_genes_file causal_genes_infertility.tsv \
   --alpha 0.5 \
   --d_max 10 \
   --patho MMAF \
@@ -101,11 +102,22 @@ python GBA_centrality.py \
   2> output/log.txt
 ```
 
-## Validation of _GBA centrality_
-
-All code for the validation of GBA centrality is in [Validation/](Validation/).
-
-
 ### Python environment
 
-We used Python 3.12 and provided dependencies in [requirements.txt](requirements.txt) (venv; https://docs.python.org/3/library/venv.html).
+GBA centrality is written in Python :snake: and requires the following dependencies: [NumPy](https://numpy.org/) and [Networkx](https://networkx.org/).
+
+We recommend installing them via [Python venv](https://docs.python.org/3/library/venv.html) with the following command:
+
+```
+python -m venv --system-site-packages pyEnv_name
+
+source pyEnv_name/bin/activate
+
+pip install --upgrade pip
+
+pip install numpy scipy
+```
+
+## Validation of _GBA centrality_
+
+All code for the validation of GBA centrality is in [Validation/](Validation/). For validation we used Python 3.12.

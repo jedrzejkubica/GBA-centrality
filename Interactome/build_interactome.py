@@ -12,7 +12,7 @@ import data_parser
 logger = logging.getLogger(__name__)
 
 
-def parse_interactions(interactions_parsed_files):
+def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
     """
     Parse the TSV files from interaction_parser.py with columns:
     - Protein A Uniprot Primary Accession
@@ -23,7 +23,8 @@ def parse_interactions(interactions_parsed_files):
 
     Filter on Interaction Detection Method and Interaction Type:
     each interaction has at least 2 experiments,
-    at least one should be proven by any binary interaction detection method
+    at least one should be proven by any binary interaction detection method.
+    Removes self-loops.
 
     Returns a list with 5 items (in each sublist):
     - Protein A Uniprot Primary Accession
@@ -79,18 +80,27 @@ def parse_interactions(interactions_parsed_files):
         if any(exp != "MI:0004" for exp in PPI2detectionMethod[interactors]):
             (proteinA, proteinB) = interactors.split('_')
 
-            PubmedID = ', '.join(PPI2PubmedID[interactors])
-            PubmedID_count = len(PPI2PubmedID[interactors])
-            experiment_count = len(PPI2detectionMethod[interactors])
+            if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
+                # remove self-loops
+                if proteinA == proteinB:
+                    continue
+                else:
+                    PubmedID = ', '.join(PPI2PubmedID[interactors])
+                    PubmedID_count = len(PPI2PubmedID[interactors])
+                    experiment_count = len(PPI2detectionMethod[interactors])
 
-            if experiment_count >= 2:
-                out_line = [proteinA, proteinB, str(PubmedID_count), PubmedID, str(experiment_count)]
-                PPIs.append(out_line)
+                    if experiment_count >= 2:
+                        out_line = [Uniprot2ENSG[proteinA],
+                                    Uniprot2ENSG[proteinB],
+                                    str(PubmedID_count),
+                                    PubmedID,
+                                    str(experiment_count)]
+                        PPIs.append(out_line)
 
     return PPIs
 
 
-def save_interactome(PPIs, Uniprot2ENSG):
+def save_interactome(PPIs):
     """
     Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
 
@@ -103,25 +113,20 @@ def save_interactome(PPIs, Uniprot2ENSG):
         proteinA = PPI[0]
         proteinB = PPI[1]
 
-        if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
-            # remove self-loops
-            if proteinA == proteinB:
-                continue
-            else:
-                out_line = (Uniprot2ENSG[proteinA], "pp", Uniprot2ENSG[proteinB])
-                print('\t'.join(out_line))
+        out_line = (proteinA, "pp", proteinB)
+        print('\t'.join(out_line))
 
 
 def main(interactions_parsed_files, uniprot_file):
 
-    logger.info("Parsing interaction files")
-    PPIs = parse_interactions(interactions_parsed_files)
-
     logger.info("Parsing Uniprot file")
     ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
+    logger.info("Parsing interaction files")
+    PPIs = parse_interactions(interactions_parsed_files, Uniprot2ENSG)
+
     logger.info("Printing interactome")
-    save_interactome(PPIs, Uniprot2ENSG)
+    save_interactome(PPIs)
 
     logger.info("Done!")
 

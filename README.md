@@ -70,7 +70,7 @@ python Interactome/interaction_parser.py --interaction_file reactome.homo_sapien
 ```
 
 
-### Step 3. Build the high-quality human interactome
+### Step 3. Build the high-confidence human interactome
 
 ```
 python Interactome/build_interactome.py \

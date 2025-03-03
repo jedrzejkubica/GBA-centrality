@@ -22,7 +22,7 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
     - Interaction Type
 
     Filter on Interaction Detection Method and Interaction Type:
-    each interaction has at least 2 experiments,
+    each interaction has at least 1 experiment,
     at least one should be proven by any binary interaction detection method.
     Removes self-loops.
 
@@ -48,14 +48,13 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
             PubmedIDs = line_split[3]
             interactionType = line_split[4].rstrip('\n')
 
-            # keep Interaction Detection Method:
-            # MI:0096 - pull down
+            # remove Interaction Detection Methods:
             # MI:0254 - genetic interference
             # MI:0686 - unspecified method
             # keep Interaction Type:
             # MI:0407 - direct interaction
             # MI:0915 - physical association
-            if detectionMethod not in ['MI:0096', 'MI:0254', 'MI:0686'] and interactionType in ['MI:0407', 'MI:0915']:
+            if detectionMethod not in ['MI:0254', 'MI:0686'] and interactionType in ['MI:0407', 'MI:0915']:
                 interactors = line_split[0] + '_' + line_split[1]  # proteinA + proteinB Primary Accessions
 
                 # store PubmedIDs as a list
@@ -89,13 +88,12 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
                     PubmedID_count = len(PPI2PubmedID[interactors])
                     experiment_count = len(PPI2detectionMethod[interactors])
 
-                    if experiment_count >= 2:
-                        out_line = [Uniprot2ENSG[proteinA],
-                                    Uniprot2ENSG[proteinB],
-                                    str(PubmedID_count),
-                                    PubmedID,
-                                    str(experiment_count)]
-                        PPIs.append(out_line)
+                    out_line = [Uniprot2ENSG[proteinA],
+                                Uniprot2ENSG[proteinB],
+                                str(PubmedID_count),
+                                PubmedID,
+                                str(experiment_count)]
+                    PPIs.append(out_line)
 
     return PPIs
 
@@ -145,7 +143,7 @@ if __name__ == "__main__":
         description="""
         Parses the output file(s) produced by interaction_parser.py
         and uniprot_parsed.tsv produced by uniprot_parser.py
-        to produce a high-quality interactome (ie, no hubs and no self-loops)
+        to produce a low-confidence interactome (ie, no hubs and no self-loops)
         in SIF format:
         - ENSG of Protein A
         - "pp" for "protein-protein interaction"

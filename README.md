@@ -115,7 +115,7 @@ source pyEnv_name/bin/activate
 
 pip install --upgrade pip
 
-pip install numpy scipy
+pip install numpy networkx
 ```
 
 ## Validation of _GBA centrality_

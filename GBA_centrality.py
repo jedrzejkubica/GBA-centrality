@@ -34,18 +34,18 @@ logger = logging.getLogger(__name__)
 
 def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> dict:
     '''
-    Calculates scores for every gene in the interactome based on the proximity to causal genes.
+    Calculate scores for every gene in the interactome based on the proximity to known causal genes.
 
     arguments:
     - interactome: type=networkx.Graph
     - adjacency_matrices: list of numpy arrays as returned by get_adjacency_matrices()
     - causal_genes: dict of causal genes with key=ENSG, value=1
-    - alpha: attenuation parameter
+    - alpha: attenuation coefficient (parameter set by user)
 
     returns:
     - scores: dict with key=ENSG, value=score
     '''
-    # 1D numpy array for genes in the interactome: 1 if causal gene, 0 otherwise,
+    # 1D numpy array for genes in the interactome: 1 if causal gene, 0 otherwise
     # size=len(nodes in interactome), ordered as in interactome.nodes()
     causal_genes_vec = numpy.zeros(len(interactome.nodes()), dtype=numpy.uint8)
     ni = 0
@@ -54,15 +54,13 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
             causal_genes_vec[ni] = 1
         ni += 1
 
-    scores_vec = numpy.zeros(len(causal_genes_vec))
-
     # calculate scores
+    scores_vec = numpy.zeros(len(causal_genes_vec))
     for d in range(0, len(adjacency_matrices)):
         A = adjacency_matrices[d]
         scores_vec += alpha ** d * A.dot(causal_genes_vec)
 
-    # map ENSGs to scores
-    scores = dict(zip(interactome.nodes(), scores_vec))
+    scores = dict(zip(interactome.nodes(), scores_vec))  # map scores to genes
 
     return scores
 
@@ -70,15 +68,16 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
 def get_adjacency_matrices(interactome, d_max=5):
     '''
     Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices).
-    Then zeroes the diagonal and normalizes the matrix (row-wise).
+    Then zeroes the diagonal and normalizes each matrix (row-wise).
 
     arguments:
     - interactome: type=networkx.Graph
-    - d_max: int
+    - d_max: max distance from a causal gene for it to contribute to a node's score (parameter set by user)
 
     returns:
-    - adjacency_matrices: list of numpy arrays, array at index i (starting at i==0)
-      is the processed A**i, rows and columns are ordered as in interactome.nodes()
+    - adjacency_matrices: list of numpy arrays,
+        array at index i (starting at i==0) is the processed A**i,
+        rows and columns are ordered as in interactome.nodes()
     '''
     # list of processed matrices, should all be of the same type (eg numpy.float32)
     adjacency_matrices = []
@@ -93,8 +92,8 @@ def get_adjacency_matrices(interactome, d_max=5):
         logger.debug(f"Calculating A**{power}")
         # @ - matrix multiplication, result of numpy @ CSC is numpy
         # res in CSR and A in CSC format should be fast, but it is slow,
-        # also res and A in numpy format is very slow,
-        # but res in numpy format and A in CSC format is the fastest
+        # also res and A in numpy format is very slow;
+        # res in numpy format and A in CSC format is the fastest
         res = res @ A
 
         # zero the diagonal
@@ -148,10 +147,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality - a network propagations algorithm for disease gene prioritization.
+        GBA centrality - a network propagation algorithm for disease gene prioritization.
         The method assigns scores to genes that represent their likelihood of being causal
-        for the phenotype. It takes into account the topology of the protein-protein interaction
-        network (interactome) and prior knowledge about causal genes for the phenotype of interest.
+        for the phenotype of interest. It takes into account the topology of the protein-protein
+        interaction network (interactome) and prior knowledge about causal genes for the phenotype.
         """
     )
 

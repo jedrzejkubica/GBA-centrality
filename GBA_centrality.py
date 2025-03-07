@@ -65,7 +65,7 @@ def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> di
     return scores
 
 
-def get_adjacency_matrices(interactome, d_max=5):
+def get_adjacency_matrices(interactome, d_max):
     '''
     Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices).
     Then zeroes the diagonal and normalizes each matrix (row-wise).
@@ -147,19 +147,37 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality - a network propagation algorithm for disease gene prioritization.
+        GBA centrality is a network propagation algorithm for disease gene prioritization.
         The method assigns scores to genes that represent their likelihood of being causal
         for the phenotype of interest. It takes into account the topology of the protein-protein
         interaction network (interactome) and prior knowledge about causal genes for the phenotype.
         """
     )
 
-    parser.add_argument('-i', '--interactome_file', type=pathlib.Path, required=True)
-    parser.add_argument('--causal_genes_file', type=pathlib.Path, required=True)
-    parser.add_argument('--uniprot_file', type=pathlib.Path, required=True)
-    parser.add_argument('--patho', default='MMAF', type=str)
-    parser.add_argument('--alpha', default=0.5, type=float)
-    parser.add_argument('--d_max', default=5, type=int)
+    parser.add_argument('-i', '--interactome_file',
+                        help='interactome SIF file with columns: ENSG1, "pp", "ENSG2"',
+                        type=pathlib.Path,
+                        required=True)
+    parser.add_argument('--causal_genes_file',
+                        help='TSV file (without a header) with 2 columns: gene name, pathology',
+                        type=pathlib.Path,
+                        required=True)
+    parser.add_argument('--uniprot_file',
+                        help='parsed Uniprot file from data_parser.parse_uniprot()',
+                        type=pathlib.Path,
+                        required=True)
+    parser.add_argument('--patho',
+                        help='pathology ID',
+                        default='MMAF',
+                        type=str)
+    parser.add_argument('--alpha',
+                        help='attenuation coefficient, 0 < alpha < 1',
+                        default=0.5,
+                        type=float)
+    parser.add_argument('--d_max',
+                        help='max distance from a causal gene for it to contribute to a node\' score',
+                        default=5,
+                        type=int)
 
     args = parser.parse_args()
 

@@ -20,10 +20,10 @@ def parse_uniprot_file(uniprot_file):
     - GeneNames
 
     Returns:
-    - primAC2taxID: key=Uniprot Primary Accession, value=TaxID
-    - secAC2primAC: key=Uniprot Secondary Accession, value=Uniprot Primary Accession
-    - geneID2primAC: key=GeneID, value=Uniprot Primary Accession
-    - geneName2primAC: key=Gene Name, value=Uniprot Primary Accession
+    - primAC2taxID: dict with key=Uniprot Primary Accession, value=TaxID
+    - secAC2primAC: dict with  key=Uniprot Secondary Accession, value=Uniprot Primary Accession
+    - geneID2primAC: dict with key=GeneID, value=Uniprot Primary Accession
+    - geneName2primAC: dict with key=Gene Name, value=Uniprot Primary Accession
     """
 
     primAC2taxID = {}
@@ -79,7 +79,7 @@ def parse_uniprot_file(uniprot_file):
         for i in range(len(secACs)):
             secAC, primAC = (secACs[i], line_split[primAC_idx])
 
-            # if Secondary_AC is associated with multiple PrimaryAC,
+            # if Secondary AC is associated with multiple Primary AC,
             # assign "-1" to avoid using it later
             if secAC2primAC.get(secAC, False):
                 if secAC2primAC[secAC] != "-1":
@@ -95,7 +95,7 @@ def parse_uniprot_file(uniprot_file):
         for i in range(len(geneIDs)):
             (geneID, primAC) = (geneIDs[i], line_split[primAC_idx])
 
-            # if GeneID is associated with multiple PrimaryAC,
+            # if GeneID is associated with multiple Primary AC,
             # assign "-1" to avoid using it later
             if geneID2primAC.get(geneID, False):
                 if geneID2primAC[geneID] != "-1":
@@ -111,7 +111,7 @@ def parse_uniprot_file(uniprot_file):
         for i in range(len(geneNames)):
             (geneName, primAC) = (geneNames[i], line_split[primAC_idx])
 
-            # if GeneName is associated with multiple PrimaryAC,
+            # if GeneName is associated with multiple Primary AC,
             # assign "-1" avoid using it later
             if geneName2primAC.get(geneName, False):
                 if geneName2primAC[geneName] != "-1":
@@ -126,7 +126,7 @@ def parse_uniprot_file(uniprot_file):
 
 def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2primAC, geneName2primAC):
     """
-    Map a miTAB 2.5 or 2.7 file to output from parse_uniprot_file().
+    Map a miTAB 2.5 or 2.7 file to the parsed Uniprot file from parse_uniprot_file().
 
     For each interaction, grab Primary Accessions of interacting proteins,
     interaction detection method, PubmedID and interaction type.
@@ -146,18 +146,18 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
     re_uniprot = re.compile(r'^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')  # protein Uniprot IDs
     re_uniprot_missed = re.compile(r'^uniprot')
 
-    # if uniprot AC not found, use GeneID to get corresponding PrimaryAC
+    # if Uniprot AC not found, use GeneID to get the corresponding Primary AC
     re_geneID = re.compile(r'^entrez gene/locuslink:(\d+)$')
     re_geneID_missed = re.compile(r'^entrez gene/locuslink:(\d+)$')
 
-    # if not found using PrimaryAC, get Uniprot Primary AC using Gene Name
+    # if not found using Primary AC, use Gene Name to get the Uniprot Primary AC
     re_geneName = re.compile(r'^(entrez gene.locuslink:|uniprotkb:)([\w\s\_\\\/\:\.\-]+$|[\w\s\_\\\/\:\.\-]+)')
 
-    # PSI-MI term parser for Interaction Detection Method and Interaction Type
+    # grab Interaction Detection Method and Interaction Type
     re_psimi = re.compile(r'^psi-mi:"(MI:\d+)"')
     re_psimi_missed = re.compile(r'^psi-mi:')
 
-    # Pubmed IDs
+    # grab publications that mention the interaction
     re_PubmedID = re.compile(r'^pubmed:(\d+)$')
     re_PubmedID_unassigned = re.compile(r'^pubmed:unassigned')  # some Pubmed IDs are unassigned in IntAct
     re_PubmedID_missed = re.compile(r'^pubmed:')
@@ -182,7 +182,7 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
         # expansion: spoke expansion
         #
         # exclude "Affinity Chromatography Technology"
-        # also corresponds to expansione
+        # also corresponds to expansion
         # example from IntAct:
         # P19784 & P03211
         # Interaction Detection Method: Affinity Chromatography Technology
@@ -210,8 +210,8 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
                 sys.exit()
 
             # if Uniprot AC and GeneID not found,
-            # then look in alternative columns in interaction file;
-            # stop at first alternativeID
+            # then look in alternative columns in miTAB file;
+            # stop at first alternative ID
             altIDs = line_split[2 + protein_idx].split("|")
 
             for altID in altIDs:
@@ -238,8 +238,8 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
                     logger.error("alternativeID " + altID + " is a GeneID but failed to grab it for line:\n", line)
                     sys.exit()
                 # if Uniprot Primary not found using above, then it using gene name:
-                # in miTAB 2.5, gene name can be in alternativeIDs column;
-                # in miTAB 2.7, gene name and gene name synonym can vbe in Alias column
+                # - in miTAB 2.5, gene name can be in alternative IDs column;
+                # - in miTAB 2.7, gene name and gene name synonym can be in the Alias column
                 elif (re_geneName.match(altID)):
                     geneNameAltID = re_geneName.match(altID).group(2)
                     # if ID == "-1", skip it
@@ -255,7 +255,7 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
                         proteins[protein_idx] = geneName2primAC[GN_aliasID]
                         break
 
-        # if no Uniprot PrimaryAC, skip
+        # if no Uniprot Primary AC, skip
         if proteins[0] == "" or proteins[1] == "":
             continue
 
@@ -266,7 +266,8 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
             logger.error("Failed to grab Interaction Detection Method for line:\n", line)
             sys.exit()
 
-        # grab PubmedID, some include additional fields
+        # grab PubmedID
+        # some line include additional fields
         # ex: pubmed:10542231|mint:MINT-5211933, so split at "|"
         PubmedID_fields = line_split[8].split("|")
         for PubmedID_entry in PubmedID_fields:
@@ -293,7 +294,7 @@ def parse_interaction_file(interaction_file, primAC2taxID, secAC2primAC, geneID2
         if (primAC2taxID[proteins[0]] != "9606") or (primAC2taxID[proteins[1]] != "9606"):
             continue
 
-        if proteins[0] < proteins[1]:  # sort PrimaryAC
+        if proteins[0] < proteins[1]:  # sort by Primary AC
             interaction_out_line = [proteins[0], proteins[1], detectionMethod, PubmedID, interactionType]
         else:
             interaction_out_line = [proteins[1], proteins[0], detectionMethod, PubmedID, interactionType]

@@ -4,7 +4,7 @@
 
 This repository contains scripts for _GBA (Guilt-by-association) centrality_.
 
-_GBA (Guilt-by-association) centrality_ is a network propagations algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype of interest.
+_GBA (Guilt-by-association) centrality_ is a network propagation algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype of interest. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype.
 
 ## How to construct the human interactome
 
@@ -16,7 +16,7 @@ Download Uniprot data
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 ```
 
-Download PPI data from BioGRID
+Download protein-protein interaction data from BioGRID
 
 ```
 wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-ORGANISM-LATEST.mitab.zip
@@ -26,7 +26,7 @@ wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-OR
 unzip BIOGRID-ORGANISM-LATEST.mitab
 ```
 
-Download PPI data from IntAct
+Download protein-protein interaction data from IntAct
 
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
@@ -36,14 +36,14 @@ wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
 
-Download PPI data from Reactome
+Download protein-protein interaction data from Reactome
 
 ```
 wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.interactions.psi-mitab.txt
 ```
 
 
-### Step 2. Parse interactome data
+### Step 2. Parse protein-protein interaction data
 
 Parse Uniprot
 
@@ -70,7 +70,7 @@ python Interactome/interaction_parser.py --interaction_file reactome.homo_sapien
 ```
 
 
-### Step 3. Build the high-confidence human interactome
+### Step 3. Build a high-confidence human interactome
 
 ```
 python Interactome/build_interactome.py \
@@ -79,16 +79,18 @@ python Interactome/build_interactome.py \
 ```
 
 
-### Step 4. Prepare a list of causal genes
+### Step 4. Prepare a list of causal genes for the phenotype of interst
 
 Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene name, pathology
 
+> [!NOTE]  
+> GBA centrality maps protein Uniprot IDs to gene ENSG IDs, and knwon causal gene names to ENSG IDs.
 
 ## How to run _GBA centrality_
 
-As input, GBA centrality takes an interactome SIF file, a Uniprot file and a TSV file with known causal genes for the phenotype of interest.
+As input, GBA centrality takes an interactome SIF file, a parsed Uniprot file and a TSV file with known causal genes for the phenotype of interest.
 
-Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10
+Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10:
 
 ```
 python GBA_centrality.py \

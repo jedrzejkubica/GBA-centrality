@@ -2,8 +2,6 @@
 
 - [validation_GBA_centrality.ipynb](validation_GBA_centrality.ipynb)
 
-For a complete description of the validation of GBA centrality see: (ref)
-
 > [!NOTE]
 > For tissue enrichment validation download the Expression Atlas from Ensembl reference (v104):
 > https://www.ebi.ac.uk/gxa/experiments-content/E-MTAB-5214/resources/ExperimentDownloadSupplier.RnaSeqBaseline/tpms.tsv

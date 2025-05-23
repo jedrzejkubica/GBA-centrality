@@ -2,6 +2,8 @@
 
 - [validation_GBA_centrality.ipynb](validation_GBA_centrality.ipynb)
 
+Perform leave-one-out cross-validation and tissue enrichment validation. Compares GBA centrality to Random Walk with Restart and PageRank
+
 > [!NOTE]
 > For tissue enrichment validation download the Expression Atlas from Ensembl reference (v104):
 > https://www.ebi.ac.uk/gxa/experiments-content/E-MTAB-5214/resources/ExperimentDownloadSupplier.RnaSeqBaseline/tpms.tsv
@@ -9,9 +11,13 @@
 > Then add manually a column (after the "ENSG" column) called "tissue_enrichment", which corresonds to the tissue enrichment
 > of each gene (i.e., divide tissue expression of each gene by the average expression of that gene in all tissues).
 
+- [validation_parameters.ipynb](validation_parameters.ipynb)
+
+Investigate the choice of the paramters on the methods' performance (GBA centrality, RWR, PageRank)
+
 - [leave_one_out_scores.py](leave_one_out_scores.py)
 
-This script calculates the scores for left-out genes.
+Calculate the scores for left-out genes.
 
 example usage:
 ```
@@ -28,4 +34,4 @@ python leave_one_out_scores.py \
 
 - [leave_one_out_ranks.py](leave_one_out_ranks.py)
 
-This script is similar to leave_one_out_scores.py but calculates ranks for left-out genes instead of scores.
+Similar to leave_one_out_scores.py but calculates ranks for left-out genes instead of scores.

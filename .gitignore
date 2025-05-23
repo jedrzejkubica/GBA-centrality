@@ -1,7 +1,4 @@
 *pycache*
-Validation/figures/*
 .backup/
 Interactome/*.tsv
 Interactome/*.sif
-output/
-run_all_experiments.sh

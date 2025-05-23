@@ -1,14 +1,30 @@
-> Laboratory TIMC / MAGe Grenoble
+> Laboratory TIMC / BCM Grenoble
 
-# GBA centrality
+# GBA (Guilt-by-association) centrality
 
-This repository contains scripts for _GBA (Guilt-by-association) centrality_.
+GBA centrality is a network propagation algorithm for disease-gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype of interest. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about disease-associated genes.
 
-_GBA (Guilt-by-association) centrality_ is a network propagation algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype of interest. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about causal genes for the phenotype.
+## 🚀 How to use _GBA centrality_
 
-## How to construct the human interactome
+As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TSV file with known disease-associated genes.
 
-### Step 1. Download interactome data
+Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10:
+
+```
+python GBA_centrality.py \
+  -i interactome_human.sif \
+  --uniprot_file uniprot_parsed.tsv \
+  --causal_genes_file causal_genes_infertility.tsv \
+  --alpha 0.5 \
+  --d_max 10 \
+  --patho MMAF \
+  1> output/scores.tsv \
+  2> output/log.txt
+```
+
+## How to prepare input data
+
+### Uniprot DAT file
 
 Download Uniprot data
 
@@ -16,7 +32,17 @@ Download Uniprot data
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 ```
 
-Download protein-protein interaction data from BioGRID
+Parse uniprot_sprot.dat.gz
+
+```
+gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_parsed.tsv
+```
+
+### Interactome SIF file
+
+**Step 1. Download protein-protein interaction data**
+
+[BioGRID](https://thebiogrid.org/)
 
 ```
 wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-ORGANISM-LATEST.mitab.zip
@@ -26,7 +52,7 @@ wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-OR
 unzip BIOGRID-ORGANISM-LATEST.mitab
 ```
 
-Download protein-protein interaction data from IntAct
+[IntAct](https://www.ebi.ac.uk/intact/home)
 
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
@@ -36,20 +62,13 @@ wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
 
-Download protein-protein interaction data from Reactome
+[Reactome](https://reactome.org/download-data)
 
 ```
 wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.interactions.psi-mitab.txt
 ```
 
-
-### Step 2. Parse protein-protein interaction data
-
-Parse Uniprot
-
-```
-gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_parsed.tsv
-```
+**Step 2. Parse protein-protein interaction data**
 
 Parse BioGRID
 
@@ -69,8 +88,7 @@ Parse Reactome
 python Interactome/interaction_parser.py --interaction_file reactome.homo_sapiens.interactions.psi-mitab.txt --uniprot_file uniprot_parsed.tsv > interactions_Reactome.tsv
 ```
 
-
-### Step 3. Build a high-confidence human interactome
+**Step 3. Build a high-confidence human interactome**
 
 ```
 python Interactome/build_interactome.py \
@@ -78,35 +96,19 @@ python Interactome/build_interactome.py \
   --uniprot_file uniprot_parsed.tsv > interactome_human.sif
 ```
 
+> [!NOTE]  
+> The _build_interactome.py_ script maps protein Uniprot IDs to gene ENSG IDs.
 
-### Step 4. Prepare a list of causal genes for the phenotype of interst
+### TSV file with known disease-associated genes
 
-Create a TSV file `causalGenes.tsv` (without a header) with 2 columns: gene name, pathology
+Create a tab-separated file `causalGenes.tsv` (without a header) with 2 columns: gene_name, pathology
 
 > [!NOTE]  
-> GBA centrality maps protein Uniprot IDs to gene ENSG IDs, and knwon causal gene names to ENSG IDs.
-
-## How to run _GBA centrality_
-
-As input, GBA centrality takes an interactome SIF file, a parsed Uniprot file and a TSV file with known causal genes for the phenotype of interest.
-
-Example usage for an infetility phenotype MMAF and parameters alpha=0.5, d_max=10:
-
-```
-python GBA_centrality.py \
-  -i interactome_human.sif \
-  --uniprot_file uniprot_parsed.tsv \
-  --causal_genes_file causal_genes_infertility.tsv \
-  --alpha 0.5 \
-  --d_max 10 \
-  --patho MMAF \
-  1> output/scores.tsv \
-  2> output/log.txt
-```
+> GBA centrality maps disease-assocaited gene names to ENSG IDs using the Uniprot DAT file.
 
 ### Python environment
 
-GBA centrality is written in Python :snake: and requires the following dependencies: [NumPy](https://numpy.org/) and [Networkx](https://networkx.org/).
+GBA centrality is written in Python :snake: and requires the following dependencies: [NumPy](https://numpy.org/) and [NetworkX](https://networkx.org/).
 
 We recommend installing them via [Python venv](https://docs.python.org/3/library/venv.html) with the following command:
 

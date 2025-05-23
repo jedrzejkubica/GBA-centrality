@@ -74,8 +74,8 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
         f.close()
 
     for interactors in PPI2PubmedID:
-        # keep PPI if at least one experiment has been proven by binary interaction method;
-        # remove PPIs that have been proved only by Affintity Chromatography Technology (ACT) "MI:0004"
+        # keep PPI if at least one experiment proven by a binary interaction method;
+        # remove PPI proven by Affintity Chromatography Technology (ACT) "MI:0004"
         if any(exp != "MI:0004" for exp in PPI2detectionMethod[interactors]):
             (proteinA, proteinB) = interactors.split('_')
 
@@ -145,6 +145,7 @@ def remove_hubs(PPIs):
     for PPI in PPIs:
         proteinA, proteinB, PubmedID_count, PubmedID, experiment_count = PPI
 
+        # remove hubs
         if (proteinA in hubs) or (proteinB in hubs):
             continue
         else:
@@ -223,6 +224,6 @@ if __name__ == "__main__":
              uniprot_file=args.uniprot_file)
 
     except Exception as e:
-        # details on the issue should be in the exception name, print it to stderr and die
+        # details on the issue should be in the exception name, print to stderr and die
         sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
         sys.exit(1)

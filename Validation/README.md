@@ -13,7 +13,7 @@ Perform leave-one-out cross-validation and tissue enrichment validation. Compare
 
 - [validation_parameters.ipynb](validation_parameters.ipynb)
 
-Investigate the choice of the paramters on the methods' performance (GBA centrality, RWR, PageRank)
+Investigate the choice of the parameters on the methods' performance (GBA centrality, RWR, PageRank)
 
 - [leave_one_out_scores.py](leave_one_out_scores.py)
 

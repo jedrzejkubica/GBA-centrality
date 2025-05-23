@@ -124,4 +124,4 @@ pip install numpy networkx
 
 ## Validation of _GBA centrality_
 
-All code for the validation of GBA centrality is in [Validation/](Validation/). For validation we used Python 3.12.
+All code for the validation of GBA centrality is in [GBA-centrality-validation](https://github.com/jjjk123/GBA-centrality-validation). For validation we used Python 3.12.

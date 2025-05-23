@@ -2,7 +2,7 @@
 
 - [validation_GBA_centrality.ipynb](validation_GBA_centrality.ipynb)
 
-Perform leave-one-out cross-validation and tissue enrichment validation. Compares GBA centrality to Random Walk with Restart and PageRank
+Perform leave-one-out cross-validation and tissue enrichment validation; compare GBA centrality to Random Walk with Restart and PageRank.
 
 > [!NOTE]
 > For tissue enrichment validation download the Expression Atlas from Ensembl reference (v104):

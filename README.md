@@ -8,19 +8,26 @@ GBA centrality is a network propagation algorithm for disease gene prioritizatio
 
 As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TSV file with known disease-associated genes.
 
-Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella) and parameters alpha=0.5, d_max=10:
-**[I recommend either we say something about alpha and d_max, or we don't mention them here at all, initially users should use the default values]**
-
+Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
 ```
 python GBA_centrality.py \
   -i interactome_human.sif \
   --uniprot_file uniprot_parsed.tsv \
   --causal_genes_file causal_genes_infertility.tsv \
-  --alpha 0.5 \
-  --d_max 10 \
   --patho MMAF \
   1> output/scores.tsv \
   2> output/log.txt
+```
+
+### Parameters
+
+GBA centrality allows the user to set two paramters:
+- alpha (default = 0.5)
+- d_max (default 
+
+Example:
+```
+python GBA_centrality.py --alpha 0.5 --d_max 10 [...]
 ```
 
 ## How to prepare input data

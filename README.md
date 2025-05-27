@@ -21,9 +21,9 @@ As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT fil
 Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
 ```
 python ~/Software/GBA-centrality/GBA_centrality.py \
-  -i ~/GBA-input/interactome_human.sif \
-  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
-  --causal_genes_file ~/GBA-input/causal_genes_infertility.tsv \
+  --interactome ~/GBA-input/interactome_human.sif \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
+  --causal ~/GBA-input/causal_genes_infertility.tsv \
   --patho MMAF \
   1> ~/GBA-output/scores.tsv \
   2> ~/GBA-output/log.txt
@@ -33,7 +33,7 @@ python ~/Software/GBA-centrality/GBA_centrality.py \
 
 GBA centrality allows the user to set two parameters:
 - alpha (default = 0.5) - attenuation coefficient; 0 < alpha < 1
-- d_max (default = 5) - propagation distance; max. distance for a causal gene to contibute to a gene's score
+- dmax (default = 5) - propagation distance; max. distance for a causal gene to contibute to a gene's score
 
 Example:
 
@@ -86,8 +86,8 @@ Parse BioGRID
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interaction_file ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt \
-  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactions_Biogrid.tsv
 ```
 
@@ -95,8 +95,8 @@ Parse IntAct
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interaction_file ~/GBA-input/intact.txt \
-  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  --interactions ~/GBA-input/intact.txt \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactions_Intact.tsv
 ```
 
@@ -104,8 +104,8 @@ Parse Reactome
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interaction_file ~/GBA-input/reactome.homo_sapiens.interactions.psi-mitab.txt \
-  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  --interactions ~/GBA-input/reactome.homo_sapiens.interactions.psi-mitab.txt \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactions_Reactome.tsv
 ```
 
@@ -113,8 +113,8 @@ python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
 
 ```
 python ~/Software/GBA-centrality/Interactome/build_interactome.py \
-  --interactions_parsed_files ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv ~/GBA-input/interactions_Reactome.tsv \
-  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  --interactions ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv ~/GBA-input/interactions_Reactome.tsv \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactome_human.sif
 ```
 

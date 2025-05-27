@@ -154,15 +154,15 @@ if __name__ == "__main__":
         """
     )
 
-    parser.add_argument('-i', '--interactome_file',
+    parser.add_argument('--interactome',
                         help='interactome SIF file with columns: ENSG1, "pp", "ENSG2"',
                         type=pathlib.Path,
                         required=True)
-    parser.add_argument('--causal_genes_file',
+    parser.add_argument('--causal',
                         help='TSV file (without a header) with 2 columns: gene name, pathology',
                         type=pathlib.Path,
                         required=True)
-    parser.add_argument('--uniprot_file',
+    parser.add_argument('--uniprot',
                         help='parsed Uniprot file from data_parser.parse_uniprot()',
                         type=pathlib.Path,
                         required=True)
@@ -174,20 +174,20 @@ if __name__ == "__main__":
                         help='attenuation coefficient, 0 < alpha < 1',
                         default=0.5,
                         type=float)
-    parser.add_argument('--d_max',
-                        help='max distance from a causal gene for it to contribute to a node\' score',
+    parser.add_argument('--dmax',
+                        help='max distance from a causal gene for it to contribute to a gene\'s score',
                         default=5,
                         type=int)
 
     args = parser.parse_args()
 
     try:
-        main(interactome_file=args.interactome_file,
-             causal_genes_file=args.causal_genes_file,
+        main(interactome_file=args.interactome,
+             causal_genes_file=args.causal,
              patho=args.patho,
-             uniprot_file=args.uniprot_file,
+             uniprot_file=args.uniprot,
              alpha=args.alpha,
-             d_max=args.d_max)
+             d_max=args.dmax)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

@@ -214,14 +214,14 @@ if __name__ == "__main__":
         - ENSG of Protein B
         """)
 
-    parser.add_argument('--interactions_parsed_files', nargs='+', required=True)
-    parser.add_argument('--uniprot_file', required=True)
+    parser.add_argument('--interactions', nargs='+', required=True)
+    parser.add_argument('--uniprot', required=True)
 
     args = parser.parse_args()
 
     try:
-        main(interactions_parsed_files=args.interactions_parsed_files,
-             uniprot_file=args.uniprot_file)
+        main(interactions_parsed_files=args.interactions,
+             uniprot_file=args.uniprot)
 
     except Exception as e:
         # details on the issue should be in the exception name, print to stderr and die

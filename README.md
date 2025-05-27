@@ -6,17 +6,22 @@ GBA centrality is a network propagation algorithm for disease gene prioritizatio
 
 ## 🚀 How to use _GBA centrality_
 
+We assume here that code is cloned in ~/Software/ , input data is downloaded and processed in ~/GBA-input/ , and results are produced in ~/GNA-output/ . Change these names to your taste and adapt all commands below accordingly. Create them with the following command:
+```
+mkdir ~/Software/ ~/GBA-input/ ~/GNA-output/
+```
+
 As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TSV file with known disease-associated genes.
 
 Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
 ```
-python GBA_centrality.py \
-  -i interactome_human.sif \
-  --uniprot_file uniprot_parsed.tsv \
-  --causal_genes_file causal_genes_infertility.tsv \
+python ~/Software/GBA-Centrality/GBA_centrality.py \
+  -i ~/GBA-input/interactome_human.sif \
+  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  --causal_genes_file ~/GBA-input/causal_genes_infertility.tsv \
   --patho MMAF \
-  1> output/scores.tsv \
-  2> output/log.txt
+  1> ~/GBA-output/scores.tsv \
+  2> ~/GBA-output/log.txt
 ```
 
 ### Parameters
@@ -38,6 +43,7 @@ python GBA_centrality.py --alpha 0.5 --d_max 5 [...]
 Download Uniprot data
 
 ```
+cd ~/GBA-input
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 ```
 

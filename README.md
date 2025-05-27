@@ -6,16 +6,21 @@ GBA centrality is a network propagation algorithm for disease gene prioritizatio
 
 ## 🚀 How to use _GBA centrality_
 
-We assume here that code is cloned in ~/Software/ , input data is downloaded and processed in ~/GBA-input/ , and results are produced in ~/GNA-output/ . Change these names to your taste and adapt all commands below accordingly. Create them with the following command:
+We assume here that this repository is cloned into `~/Software/`, input data is downloaded and processed in `~/GBA-input/`, and results will be produced in `~/GBA-output/`. Change these names to your taste and adapt all commands below accordingly. Create these folders with the following command:
+
 ```
-mkdir ~/Software/ ~/GBA-input/ ~/GNA-output/
+mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
+```
+
+```
+git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
 As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TSV file with known disease-associated genes.
 
 Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
 ```
-python ~/Software/GBA-Centrality/GBA_centrality.py \
+python ~/Software/GBA-centrality/GBA_centrality.py \
   -i ~/GBA-input/interactome_human.sif \
   --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
   --causal_genes_file ~/GBA-input/causal_genes_infertility.tsv \
@@ -33,33 +38,29 @@ GBA centrality allows the user to set two parameters:
 Example:
 
 ```
-python GBA_centrality.py --alpha 0.5 --d_max 5 [...]
+python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --d_max 5 [...]
 ```
 
 ## How to prepare input data
 
 ### Uniprot DAT file
 
-Download Uniprot data
+Download and parse Uniprot data
 
 ```
 cd ~/GBA-input
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
-```
-
-Parse uniprot_sprot.dat.gz
-
-```
-gunzip -c uniprot_sprot.dat.gz | python Interactome/uniprot_parser.py > uniprot_parsed.tsv
+gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/uniprot_parser.py > uniprot_parsed.tsv
 ```
 
 ### Interactome SIF file
 
-**Step 1. Download and extract Human protein-protein interaction data**
+**Step 1. Download and extract human protein-protein interaction data**
 
 [BioGRID](https://thebiogrid.org/)
 
 ```
+cd ~/GBA-input
 wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-ORGANISM-LATEST.mitab.zip
 unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt
 ```
@@ -67,6 +68,7 @@ unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.tx
 [IntAct](https://www.ebi.ac.uk/intact/home)
 
 ```
+cd ~/GBA-input
 wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
@@ -74,6 +76,7 @@ unzip intact.zip
 [Reactome](https://reactome.org/download-data)
 
 ```
+cd ~/GBA-input
 wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.interactions.psi-mitab.txt
 ```
 
@@ -82,27 +85,37 @@ wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.int
 Parse BioGRID
 
 ```
-python Interactome/interaction_parser.py --interaction_file BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt --uniprot_file uniprot_parsed.tsv > interactions_Biogrid.tsv
+python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
+  --interaction_file ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt \
+  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  > ~/GBA-input/interactions_Biogrid.tsv
 ```
 
 Parse IntAct
 
 ```
-python Interactome/interaction_parser.py --interaction_file intact.txt --uniprot_file uniprot_parsed.tsv > interactions_Intact.tsv
+python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
+  --interaction_file ~/GBA-input/intact.txt \
+  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  > ~/GBA-input/interactions_Intact.tsv
 ```
 
 Parse Reactome
 
 ```
-python Interactome/interaction_parser.py --interaction_file reactome.homo_sapiens.interactions.psi-mitab.txt --uniprot_file uniprot_parsed.tsv > interactions_Reactome.tsv
+python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
+  --interaction_file ~/GBA-input/reactome.homo_sapiens.interactions.psi-mitab.txt \
+  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  > ~/GBA-input/interactions_Reactome.tsv
 ```
 
 **Step 3. Build a high-confidence human interactome**
 
 ```
-python Interactome/build_interactome.py \
-  --interactions_parsed_files interactions_Biogrid.tsv interactions_Intact.tsv interactions_Reactome.tsv \
-  --uniprot_file uniprot_parsed.tsv > interactome_human.sif
+python ~/Software/GBA-centrality/Interactome/build_interactome.py \
+  --interactions_parsed_files ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv ~/GBA-input/interactions_Reactome.tsv \
+  --uniprot_file ~/GBA-input/uniprot_parsed.tsv \
+  > ~/GBA-input/interactome_human.sif
 ```
 
 > [!NOTE]  

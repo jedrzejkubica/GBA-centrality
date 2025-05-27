@@ -21,13 +21,14 @@ python GBA_centrality.py \
 
 ### Parameters
 
-GBA centrality allows the user to set two paramters:
-- alpha (default = 0.5)
-- d_max (default 
+GBA centrality allows the user to set two parameters:
+- alpha (default = 0.5) - attenuation coefficient; 0 < alpha < 1
+- d_max (default = 5) - propagation distance; max. distance for a causal gene to contibute to a gene's score
 
 Example:
+
 ```
-python GBA_centrality.py --alpha 0.5 --d_max 10 [...]
+python GBA_centrality.py --alpha 0.5 --d_max 5 [...]
 ```
 
 ## How to prepare input data
@@ -104,10 +105,11 @@ python Interactome/build_interactome.py \
 ### TSV file with known disease-associated genes
 
 Create a tab-separated file `causalGenes.tsv` (without a header) with 2 columns: gene_name, pathology
-**[provide some description + example of what we expect as gene name, eg official HGNC gene name (HUGO Gene Nomenclature Committee, https://www.genenames.org)]**
 
-> [!NOTE]  
+> [!NOTE]
 > GBA centrality maps disease-assocaited gene names to ENSG IDs using the Uniprot DAT file.
+> 
+> As gene names, GBA centrality requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
 
 ### Python environment
 

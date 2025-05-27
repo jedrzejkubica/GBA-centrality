@@ -110,7 +110,7 @@ We recommend installing them via [Python venv](https://docs.python.org/3/library
 
 ```
 python -m venv --system-site-packages ~/pyEnv_GBA-centrality
-source pyEnv_name/bin/activate
+source ~/pyEnv_GBA-centrality/bin/activate
 pip install --upgrade pip
 pip install numpy networkx
 ```

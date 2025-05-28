@@ -4,7 +4,7 @@
 
 GBA centrality is a network propagation algorithm for disease gene prioritization. The method assigns scores to genes that represent their likelihood of being causal for the phenotype/disease of interest. It takes into account the topology of the protein-protein interaction network (interactome) and prior knowledge about genes known to be associated with the disease.
 
-## 🚀 How to use _GBA centrality_
+## 🚀 How to use GBA centrality
 
 We assume here that this repository is cloned into `~/Software/`, input data is downloaded and processed in `~/GBA-input/`, and results will be produced in `~/GBA-output/`. Change these names to your taste and adapt all commands below accordingly. Create these folders with the following command:
 
@@ -16,9 +16,9 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
-As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TXT file with known disease-associated genes.
+As input, GBA centrality takes an interactome SIF file, a parsed Uniprot file and a TXT file with known disease-associated genes.
 
-Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
+Example usage:
 ```
 python ~/Software/GBA-centrality/GBA_centrality.py \
   --interactome ~/GBA-input/interactome_human.sif \
@@ -37,14 +37,14 @@ GBA centrality allows the user to set two parameters:
 Example:
 
 ```
-python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --d_max 5 [...]
+python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --dmax 5 [...]
 ```
 
 ## How to prepare input data
 
-### Uniprot DAT file
+### Uniprot file
 
-Download and parse Uniprot data
+Download and parse Uniprot data:
 
 ```
 cd ~/GBA-input
@@ -85,7 +85,7 @@ Parse BioGRID
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens*.mitab.txt \
+  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactions_Biogrid.tsv
 ```
@@ -122,10 +122,10 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
 
 ### TXT file with known disease-associated genes
 
-Create a TXT file `causalGenes.tsv` (without a header) with 1 column: gene_name
+Create a TXT file `causal_genes.txt` (without a header) with 1 column: gene_name
 
 > [!NOTE]
-> GBA centrality maps disease-assocaited gene names to ENSG IDs using the Uniprot DAT file.
+> GBA centrality maps disease-assocaited gene names to ENSG IDs using the parsed Uniprot file.
 > 
 > As gene names, GBA centrality requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
 
@@ -145,9 +145,9 @@ pip install numpy networkx
 You can then run GBA-centrality with:
 ```
 source ~/pyEnv_GBA-centrality/bin/activate
-python GBA_centrality.py [...]
+python ~/Software/GBA-centrality/GBA_centrality.py [...]
 ```
 
-## Validation of _GBA centrality_
+## Validation of GBA centrality
 
 All code for the validation of GBA centrality is in [GBA-centrality-validation](https://github.com/jedrzejkubica/GBA-centrality-validation). For validation we used Python 3.12.

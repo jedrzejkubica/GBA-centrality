@@ -17,6 +17,9 @@
 ############################################################################################
 
 import logging
+
+import re
+
 import networkx
 
 
@@ -126,16 +129,15 @@ def parse_uniprot(uniprot_file):
     return ENSG2gene, gene2ENSG, uniprot2ENSG
 
 
-def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict:
+def parse_causal_genes(causal_genes_file, gene2ENSG, interactome) -> dict:
     '''
-    Build a dict of causal ENSGs for patho
+    Build a dict of causal ENSGs for phenotype
 
     arguments:
-    - causal_genes_file: filename (with path) of known causal genes TSV file
-      with 2 columns: gene_name pathologyID, type=str
+    - causal_genes_file: filename (with path) of known causal genes TXT file
+      with 1 column: gene_name, type=str
     - gene2ENSG: dict of all known genes, key=gene_name, value=ENSG
     - interactome: networkx.Graph
-    - pathologyID of interest, causal genes for other pathologyIDs are ignored
 
     returns:
     - causal_genes: dict of all causal genes present in interactome, with key=ENSG, value=1
@@ -148,16 +150,14 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
         logger.error("Opening provided causal genes file %s: %s", causal_genes_file, e)
         raise Exception("cannot open provided causal genes file")
 
-    for line in f_causal:
-        split_line = line.rstrip().split('\t')
-        if len(split_line) != 2:
-            logger.error("causal_genes file %s has bad line (not 2 tab-separated fields): %s",
-                         causal_genes_file, line)
-            raise Exception("Bad line in the causal_genes file")
-        gene_name, pathology = split_line
+    re_causal = re.compile(r'^[a-zA-Z0-9\-_]+$')  # allow for: letters, digits, "_", "-"
 
-        if pathology != patho:
-            continue
+    for line in f_causal:
+        if re_causal.match(line):
+            gene_name = line
+        else:
+            raise Exception(f"Bad line in the causal genes file: {line}")
+
         if gene_name in gene2ENSG:
             ENSG = gene2ENSG[gene_name]
             if ENSG in interactome:
@@ -168,8 +168,8 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho) -> dict
 
     f_causal.close()
 
-    logger.info("found %i causal genes with known ENSG for pathology %s",
-                len(causal_genes), patho)
+    logger.info("found %i causal genes with known ENSG for phenotype %s",
+                len(causal_genes))
 
     return causal_genes
 

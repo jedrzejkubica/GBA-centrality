@@ -112,7 +112,7 @@ def get_adjacency_matrices(interactome, d_max):
     return adjacency_matrices
 
 
-def main(interactome_file, causal_genes_file, uniprot_file, patho, alpha, d_max):
+def main(interactome_file, causal_genes_file, uniprot_file, alpha, d_max):
 
     logger.info("Parsing interactome")
     interactome = data_parser.parse_interactome(interactome_file)
@@ -121,7 +121,7 @@ def main(interactome_file, causal_genes_file, uniprot_file, patho, alpha, d_max)
     ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
-    causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome, patho)
+    causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome)
 
     logger.info("Calculating powers of adjacency matrix")
     adjacency_matrices = get_adjacency_matrices(interactome, d_max)
@@ -159,17 +159,13 @@ if __name__ == "__main__":
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--causal',
-                        help='TSV file (without a header) with 2 columns: gene name, pathology',
+                        help='TXT file (without a header) with 1 column: gene_name',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--uniprot',
                         help='parsed Uniprot file from data_parser.parse_uniprot()',
                         type=pathlib.Path,
                         required=True)
-    parser.add_argument('--patho',
-                        help='pathology ID',
-                        default='MMAF',
-                        type=str)
     parser.add_argument('--alpha',
                         help='attenuation coefficient, 0 < alpha < 1',
                         default=0.5,
@@ -184,7 +180,6 @@ if __name__ == "__main__":
     try:
         main(interactome_file=args.interactome,
              causal_genes_file=args.causal,
-             patho=args.patho,
              uniprot_file=args.uniprot,
              alpha=args.alpha,
              d_max=args.dmax)

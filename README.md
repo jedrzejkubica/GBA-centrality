@@ -16,15 +16,14 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
-As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TSV file with known disease-associated genes.
+As input, GBA centrality takes an interactome SIF file, a parsed Uniprot DAT file and a TXT file with known disease-associated genes.
 
 Example usage for an infertility phenotype (MMAF: multiple morphological abnormalities of the sperm flagella):
 ```
 python ~/Software/GBA-centrality/GBA_centrality.py \
   --interactome ~/GBA-input/interactome_human.sif \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  --causal ~/GBA-input/causal_genes_infertility.tsv \
-  --patho MMAF \
+  --causal ~/GBA-input/causal_genes.txt \
   1> ~/GBA-output/scores.tsv \
   2> ~/GBA-output/log.txt
 ```
@@ -121,9 +120,9 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
 > [!NOTE]  
 > The build_interactome.py script maps protein Uniprot IDs to gene ENSG IDs.
 
-### TSV file with known disease-associated genes
+### TXT file with known disease-associated genes
 
-Create a tab-separated file `causalGenes.tsv` (without a header) with 2 columns: gene_name, pathology
+Create a TXT file `causalGenes.tsv` (without a header) with 1 column: gene_name
 
 > [!NOTE]
 > GBA centrality maps disease-assocaited gene names to ENSG IDs using the Uniprot DAT file.

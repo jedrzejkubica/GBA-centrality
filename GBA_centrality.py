@@ -163,11 +163,11 @@ if __name__ == "__main__":
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--uniprot',
-                        help='parsed Uniprot file from data_parser.parse_uniprot()',
+                        help='parsed Uniprot file from Interactome/uniprot_parser.py',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--alpha',
-                        help='attenuation coefficient; 0 < alpha < 1',
+                        help='attenuation coefficient (0 < alpha < 1)',
                         default=0.5,
                         type=float)
     parser.add_argument('--dmax',

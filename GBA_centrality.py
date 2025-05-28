@@ -148,14 +148,14 @@ if __name__ == "__main__":
         prog=script_name,
         description="""
         GBA centrality is a network propagation algorithm for disease gene prioritization.
-        The method assigns scores to genes that represent their likelihood of being causal
-        for the phenotype of interest. It takes into account the topology of the protein-protein
-        interaction network (interactome) and prior knowledge about causal genes for the phenotype.
+        The method assigns scores to genes that represent their likelihood of being causal for
+        the phenotype/disease of interest. It takes into account the topology of the protein-protein
+        interaction network (interactome) and prior knowledge about genes known to be associated with the disease.
         """
     )
 
     parser.add_argument('--interactome',
-                        help='interactome SIF file with columns: ENSG1, "pp", "ENSG2"',
+                        help='interactome SIF file with columns: ENSG1, "pp", ENSG2',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--causal',
@@ -167,11 +167,11 @@ if __name__ == "__main__":
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--alpha',
-                        help='attenuation coefficient, 0 < alpha < 1',
+                        help='attenuation coefficient; 0 < alpha < 1',
                         default=0.5,
                         type=float)
     parser.add_argument('--dmax',
-                        help='max distance from a causal gene for it to contribute to a gene\'s score',
+                        help='propagation distance',
                         default=5,
                         type=int)
 

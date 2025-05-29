@@ -155,7 +155,6 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome) -> dict:
     for line in f_causal:
         if re_causal.match(line):
             gene_name = line.rstrip()
-            print(gene_name)
         else:
             raise Exception(f"Bad line in the causal genes file: {line}")
 

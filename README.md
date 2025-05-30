@@ -136,7 +136,7 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
 
 ### TXT file with known disease-associated genes
 
-Create a TXT file `causal_genes.txt` (without a header) with 1 column: gene_name
+Create a TXT file `causal_genes.txt` (without a header) with only one column: gene_name
 
 > [!NOTE]
 > GBA centrality maps causal gene names to ENSG IDs using the parsed Uniprot file.

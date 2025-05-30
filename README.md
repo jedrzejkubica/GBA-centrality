@@ -44,7 +44,9 @@ python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --dmax 5 [...]
 
 ### Uniprot file
 
-Download and parse Uniprot data:
+The Uniprot file is used for further mapping between Uniprot protein IDs to gene ENSG IDs and gene names to gene ENSG IDs.
+
+Download and parse Uniprot dataset (size ~651M):
 
 ```
 cd ~/GBA-input
@@ -54,9 +56,11 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
+
+
 **Step 1. Download and extract human protein-protein interaction data**
 
-[BioGRID](https://thebiogrid.org/)
+[BioGRID](https://thebiogrid.org/) (size ~171M)
 
 ```
 cd ~/GBA-input
@@ -64,7 +68,7 @@ wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-OR
 unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt
 ```
 
-[IntAct](https://www.ebi.ac.uk/intact/home)
+[IntAct](https://www.ebi.ac.uk/intact/home) (size ~807M)
 
 ```
 cd ~/GBA-input
@@ -72,7 +76,7 @@ wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
 
-[Reactome](https://reactome.org/download-data)
+[Reactome](https://reactome.org/download-data) (size ~176M)
 
 ```
 cd ~/GBA-input

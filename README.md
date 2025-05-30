@@ -35,7 +35,6 @@ GBA centrality allows the user to set two parameters:
 - dmax (default = 5) - propagation distance; max. distance for a causal gene to contibute to a gene's score
 
 Example:
-
 ```
 python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --dmax 5 [...]
 ```
@@ -44,9 +43,9 @@ python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --dmax 5 [...]
 
 ### Uniprot file
 
-The Uniprot file is used for further mapping between Uniprot protein IDs to gene ENSG IDs and gene names to gene ENSG IDs.
+This file will be used for mapping between Uniprot protein IDs to gene ENSG IDs and gene names to gene ENSG IDs.
 
-Download and parse Uniprot dataset (size ~651M):
+Download and parse Uniprot dataset (.gz file size ~651M):
 
 ```
 cd ~/GBA-input
@@ -56,11 +55,11 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
-
+Below we provide commands for constructing a human interactome using protein-protein interaction datasets from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data).
 
 **Step 1. Download and extract human protein-protein interaction data**
 
-[BioGRID](https://thebiogrid.org/) (size ~171M)
+BioGRID (.zip file size ~171M)
 
 ```
 cd ~/GBA-input
@@ -68,7 +67,7 @@ wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-OR
 unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt
 ```
 
-[IntAct](https://www.ebi.ac.uk/intact/home) (size ~807M)
+IntAct (.zip file size ~807M)
 
 ```
 cd ~/GBA-input
@@ -76,7 +75,7 @@ wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
 
-[Reactome](https://reactome.org/download-data) (size ~176M)
+Reactome (file size ~176M)
 
 ```
 cd ~/GBA-input
@@ -114,6 +113,17 @@ python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
 
 **Step 3. Build a high-confidence human interactome**
 
+Here the protein-protein interactions data is filtered as follows:
+- remove complex expansion
+- remove interaction detection methods: genetic interference (MI:0254) and unspecified method (MI:0686)
+- keep interaction types: direct interaction (MI:0407) and physical association (MI:0915)
+- keep interactions if at least one experiment has been proven by a binary interaction method
+- remove interactions proven by Affintity Chromatography Technology (MI:0004)
+- remove self-loops
+- remove the top 1% of proteins with the highest degrees (number of interactions)
+
+Then the data is merged into one SIF file. Further details about the SIF format can be found here: https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format
+
 ```
 python ~/Software/GBA-centrality/Interactome/build_interactome.py \
   --interactions ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv ~/GBA-input/interactions_Reactome.tsv \
@@ -121,15 +131,15 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
   > ~/GBA-input/interactome_human.sif
 ```
 
-> [!NOTE]  
-> The build_interactome.py script maps protein Uniprot IDs to gene ENSG IDs.
+> [!NOTE]
+> The build_interactome.py script maps protein Uniprot IDs to gene ENSG IDs using the parsed Uniprot file.
 
 ### TXT file with known disease-associated genes
 
 Create a TXT file `causal_genes.txt` (without a header) with 1 column: gene_name
 
 > [!NOTE]
-> GBA centrality maps disease-assocaited gene names to ENSG IDs using the parsed Uniprot file.
+> GBA centrality maps causal gene names to ENSG IDs using the parsed Uniprot file.
 > 
 > As gene names, GBA centrality requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
 

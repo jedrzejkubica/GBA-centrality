@@ -20,6 +20,7 @@ import os
 import sys
 import logging
 import pathlib
+import ctypes
 
 import argparse
 
@@ -32,87 +33,79 @@ import data_parser
 logger = logging.getLogger(__name__)
 
 
-def calculate_scores(interactome, adjacency_matrices, causal_genes, alpha) -> dict:
+class adjacencyMatrix(ctypes.Structure):
+    _fields_ = [('nbCols', ctypes.c_uint),
+                ('weights', ctypes.POINTER(ctypes.c_float))]
+
+
+class geneScores(ctypes.Structure):
+    _fields_ = [('nbGenes', ctypes.c_uint),
+                ('scores', ctypes.POINTER(ctypes.c_float))]
+
+
+def calculate_scores(interactome, causal_genes, alpha) -> dict:
     '''
     Calculate scores for every gene in the interactome based on the proximity to known causal genes.
 
     arguments:
     - interactome: type=networkx.Graph
-    - adjacency_matrices: list of numpy arrays as returned by get_adjacency_matrices()
     - causal_genes: dict of causal genes with key=ENSG, value=1
     - alpha: attenuation coefficient (parameter set by user)
 
     returns:
     - scores: dict with key=ENSG, value=score
     '''
-    # 1D numpy array for genes in the interactome: 1 if causal gene, 0 otherwise
+    so_file = "./GBA-centrality-C/gbaCentrality.so"
+    gbaLibrary = ctypes.CDLL(so_file)
+    # declare function signature
+    gbaLibrary.gbaCentrality.argtypes = [
+        ctypes.POINTER(adjacencyMatrix),
+        ctypes.POINTER(geneScores),
+        ctypes.c_float,
+        ctypes.POINTER(geneScores)
+    ]
+    gbaLibrary.gbaCentrality.restype = None
+
+    # generate adjacencyMatrix
+    weights = networkx.to_numpy_array(interactome, dtype=numpy.float32)
+    weights_1D = weights.flatten()
+    weights_ctype = (ctypes.c_float * len(weights_1D))(*weights_1D)
+    A = adjacencyMatrix(nbCols=len(interactome.nodes()),
+                        weights=weights_ctype)
+
+    # generate geneScores
+    # array for genes in the interactome: 1 if causal gene, 0 otherwise
     # size=len(nodes in interactome), ordered as in interactome.nodes()
-    causal_genes_vec = numpy.zeros(len(interactome.nodes()), dtype=numpy.uint8)
+    causal_genes_vec = [0.0] * len(interactome.nodes())
     ni = 0
     for n in interactome.nodes():
         if n in causal_genes:
-            causal_genes_vec[ni] = 1
+            causal_genes_vec[ni] = 1.0
         ni += 1
 
-    # calculate scores
-    scores_vec = numpy.zeros(len(causal_genes_vec))
-    for d in range(0, len(adjacency_matrices)):
-        A = adjacency_matrices[d]
-        scores_vec += alpha ** d * A.dot(causal_genes_vec)
+    causal_genes_ctype = (ctypes.c_float * len(causal_genes_vec))(*causal_genes_vec)
+    causal = geneScores(nbGenes=len(causal_genes_vec),
+                        scores=causal_genes_ctype)
 
-    scores = dict(zip(interactome.nodes(), scores_vec))  # map scores to genes
+    scores_vec = (ctypes.c_float * len(causal_genes_vec))()
+
+    res = geneScores(nbGenes=len(causal_genes_vec), scores=ctypes.cast(scores_vec, ctypes.POINTER(ctypes.c_float)))
+
+    gbaLibrary.gbaCentrality(
+        ctypes.byref(A),
+        ctypes.byref(causal),
+        ctypes.c_float(alpha),
+        ctypes.byref(res)
+    )
+
+    res_scores = [res.scores[i] for i in range(res.nbGenes)]
+
+    scores = dict(zip(interactome.nodes(), res_scores))  # map scores to genes
 
     return scores
 
 
-def get_adjacency_matrices(interactome, d_max):
-    '''
-    Calculates powers of adjacency matrix up to power d_max (using non-normalized matrices).
-    Then zeroes the diagonal and normalizes each matrix (row-wise).
-
-    arguments:
-    - interactome: type=networkx.Graph
-    - d_max: max distance from a causal gene for it to contribute to a node's score (parameter set by user)
-
-    returns:
-    - adjacency_matrices: list of numpy arrays,
-        array at index i (starting at i==0) is the processed A**i,
-        rows and columns are ordered as in interactome.nodes()
-    '''
-    # list of processed matrices, should all be of the same type (eg numpy.float32)
-    adjacency_matrices = []
-
-    A = networkx.to_scipy_sparse_array(interactome, dtype=numpy.uint64, format='csc')
-
-    # temporary variable for A**power
-    res = numpy.identity(A.shape[0], dtype=numpy.uint64)
-    adjacency_matrices.append(res.astype(numpy.float32))
-
-    for power in range(1, d_max + 1):
-        logger.debug(f"Calculating A**{power}")
-        # @ - matrix multiplication, result of numpy @ CSC is numpy
-        # res in CSR and A in CSC format should be fast, but it is slow,
-        # also res and A in numpy format is very slow;
-        # res in numpy format and A in CSC format is the fastest
-        res = res @ A
-
-        # zero the diagonal
-        numpy.fill_diagonal(res, val=0)
-
-        # row-wise normalization
-        res_norm = res.astype(numpy.float32)
-        row_sum = res_norm.sum(axis=1)  # row-wise axis=1, column-wise axis=0
-        row_sum[row_sum == 0] = 1
-        res_norm_T = res_norm.T
-        res_norm_T /= row_sum
-
-        adjacency_matrices.append(res_norm)
-
-    logger.debug("Done building %i matrices", len(adjacency_matrices))
-    return adjacency_matrices
-
-
-def main(interactome_file, causal_genes_file, uniprot_file, alpha, d_max):
+def main(interactome_file, causal_genes_file, uniprot_file, alpha):
 
     logger.info("Parsing interactome")
     interactome = data_parser.parse_interactome(interactome_file)
@@ -123,11 +116,8 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, d_max):
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, interactome)
 
-    logger.info("Calculating powers of adjacency matrix")
-    adjacency_matrices = get_adjacency_matrices(interactome, d_max)
-
     logger.info("Calculating scores")
-    scores = calculate_scores(interactome, adjacency_matrices, causal_genes, alpha)
+    scores = calculate_scores(interactome, causal_genes, alpha)
 
     logger.info("Printing scores")
     data_parser.scores_to_TSV(scores, ENSG2gene)
@@ -170,10 +160,6 @@ if __name__ == "__main__":
                         help='attenuation coefficient (0 < alpha < 1)',
                         default=0.5,
                         type=float)
-    parser.add_argument('--dmax',
-                        help='propagation distance',
-                        default=5,
-                        type=int)
 
     args = parser.parse_args()
 
@@ -181,8 +167,7 @@ if __name__ == "__main__":
         main(interactome_file=args.interactome,
              causal_genes_file=args.causal,
              uniprot_file=args.uniprot,
-             alpha=args.alpha,
-             d_max=args.dmax)
+             alpha=args.alpha)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

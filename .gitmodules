@@ -1,0 +1,3 @@
+[submodule "GBA-centrality-C"]
+	path = GBA-centrality-C
+	url = https://github.com/jedrzejkubica/GBA-centrality-C.git

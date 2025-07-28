@@ -27,13 +27,14 @@ import networkx
 logger = logging.getLogger(__name__)
 
 
-def parse_interactome(interactome_file) -> networkx.Graph:
+def parse_interactome(interactome_file, weighted) -> networkx.Graph:
     '''
     Creates a networkx.Graph representing the interactome
 
     arguments:
-    - interactome_file: filename (with path) of interactome in SIF format (ie
-      3 tab-separated columns: ENSG1 pp ENSG2), type=str
+    - interactome_file: filename (with path) of interactome in SIF format
+      (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2), type=str
+      NOTE: weights can be floats in [0, 1] or one interaction type (eg "pp")
 
     returns:
     - interactome: type=networkx.Graph
@@ -54,13 +55,16 @@ def parse_interactome(interactome_file) -> networkx.Graph:
                          interactome_file, line)
             raise Exception("Bad line in the interactome file")
 
-        gene1, pp, gene2 = split_line
+        gene1, weight, gene2 = split_line
 
         # exclude self-interactions
         if gene1 == gene2:
             continue
-        # else: ppopulate structures
-        interactome.add_edge(gene1, gene2)
+        # else: populate structures
+        if weighted:
+            interactome.add_edge(gene1, gene2, weight=float(weight))
+        else:
+            interactome.add_edge(gene1, gene2)
         num_edges += 1
 
     logger.info("built non-redundant network from %i non-self interactions, " +

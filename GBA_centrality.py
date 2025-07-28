@@ -105,10 +105,10 @@ def calculate_scores(interactome, causal_genes, alpha) -> dict:
     return scores
 
 
-def main(interactome_file, causal_genes_file, uniprot_file, alpha):
+def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted):
 
     logger.info("Parsing interactome")
-    interactome = data_parser.parse_interactome(interactome_file)
+    interactome = data_parser.parse_interactome(interactome_file, weighted)
 
     logger.info("Parsing gene-to-ENSG mapping")
     ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
@@ -145,7 +145,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--interactome',
-                        help='interactome SIF file with columns: ENSG1, "pp", ENSG2',
+                        help='''filename (with path) of interactome in SIF format
+                                (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2), type=str
+                                NOTE: second column is either weights (floats in [0, 1])
+                                or one interaction type (eg "pp"); if weighted, use parameter --weighted''',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--causal',
@@ -160,6 +163,10 @@ if __name__ == "__main__":
                         help='attenuation coefficient (0 < alpha < 1)',
                         default=0.5,
                         type=float)
+    parser.add_argument('--weighted',
+                        help='use if graph is weighted',
+                        default=False,
+                        type=bool)
 
     args = parser.parse_args()
 
@@ -167,7 +174,8 @@ if __name__ == "__main__":
         main(interactome_file=args.interactome,
              causal_genes_file=args.causal,
              uniprot_file=args.uniprot,
-             alpha=args.alpha)
+             alpha=args.alpha,
+             weighted=args.weighted)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

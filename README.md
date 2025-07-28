@@ -16,6 +16,20 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
+This repository uses the [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C) library for matrix calculations. GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
+
+```
+git submodule add https://github.com/jedrzejkubica/GBA-centrality-C
+```
+
+```
+cd GBA-centrality-C
+```
+
+```
+make
+```
+
 As input, GBA centrality takes an interactome SIF file, a parsed Uniprot file and a TXT file with known disease-associated genes.
 
 Example usage:

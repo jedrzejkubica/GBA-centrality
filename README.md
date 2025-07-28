@@ -16,7 +16,7 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
-This repository uses the [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C) library for matrix calculations. GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
+This repository uses the [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C) library. GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
 
 ```
 git submodule add https://github.com/jedrzejkubica/GBA-centrality-C
@@ -69,7 +69,7 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
-Below we provide commands for constructing a human interactome using protein-protein interaction datasets from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data).
+Below we provide commands for constructing a human interactome (undirected and unweighted) using protein-protein interaction datasets from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data). The interactome file has 3 tab-separated columns: ENSG1 "pp" ENSG2. It can be modified to create a weighted graph by replacing "pp" with weights (0 < weight < 1). If so, use `--weighted` parameter when running GBA centrality.
 
 **Step 1. Download and extract human protein-protein interaction data**
 

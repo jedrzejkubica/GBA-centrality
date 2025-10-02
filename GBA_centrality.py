@@ -33,10 +33,15 @@ import data_parser
 logger = logging.getLogger(__name__)
 
 
-class adjacencyMatrix(ctypes.Structure):
-    _fields_ = [('nbCols', ctypes.c_uint),
-                ('weights', ctypes.POINTER(ctypes.c_float))]
-
+class edge(ctypes.Structure):
+    _fields_ = [('source', ctypes.c_uint),
+                ('dest', ctypes.c_uint),
+                ('weights', ctypes.c_float)]
+    
+class network(ctypes.Structure):
+    _fields_ = [('nbNodes', ctypes.c_uint),
+                ('nbEdges', ctypes.c_uint),
+                ('edges', edge)]
 
 class geneScores(ctypes.Structure):
     _fields_ = [('nbGenes', ctypes.c_uint),
@@ -59,7 +64,7 @@ def calculate_scores(interactome, causal_genes, alpha) -> dict:
     gbaLibrary = ctypes.CDLL(so_file)
     # declare function signature
     gbaLibrary.gbaCentrality.argtypes = [
-        ctypes.POINTER(adjacencyMatrix),
+        ctypes.POINTER(network),
         ctypes.POINTER(geneScores),
         ctypes.c_float,
         ctypes.POINTER(geneScores)
@@ -72,6 +77,10 @@ def calculate_scores(interactome, causal_genes, alpha) -> dict:
     weights_ctype = (ctypes.c_float * len(weights_1D))(*weights_1D)
     A = adjacencyMatrix(nbCols=len(interactome.nodes()),
                         weights=weights_ctype)
+    
+    # generate edge list
+    # get node indexing instead of ENSGs
+    
 
     # generate geneScores
     # array for genes in the interactome: 1 if causal gene, 0 otherwise
@@ -105,10 +114,12 @@ def calculate_scores(interactome, causal_genes, alpha) -> dict:
     return scores
 
 
-def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted):
+def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed):
 
     logger.info("Parsing interactome")
-    interactome = data_parser.parse_interactome(interactome_file, weighted)
+    interactome = data_parser.parse_interactome(interactome_file, weighted, directed)
+
+    sys.exit()
 
     logger.info("Parsing gene-to-ENSG mapping")
     ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
@@ -167,6 +178,10 @@ if __name__ == "__main__":
                         help='use if graph is weighted',
                         default=False,
                         type=bool)
+    parser.add_argument('--directed',
+                        help='use if graph is directed',
+                        default=False,
+                        type=bool)
 
     args = parser.parse_args()
 
@@ -175,7 +190,8 @@ if __name__ == "__main__":
              causal_genes_file=args.causal,
              uniprot_file=args.uniprot,
              alpha=args.alpha,
-             weighted=args.weighted)
+             weighted=args.weighted,
+             directed=args.directed)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

@@ -20,16 +20,16 @@ import logging
 
 import re
 
-import networkx
+import numpy
 
 
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
 
 
-def parse_interactome(interactome_file, weighted) -> networkx.Graph:
+def parse_interactome(interactome_file, weighted):
     '''
-    Creates a networkx.Graph representing the interactome
+    Creates an edge list representing the interactome
 
     arguments:
     - interactome_file: filename (with path) of interactome in SIF format
@@ -37,10 +37,12 @@ def parse_interactome(interactome_file, weighted) -> networkx.Graph:
       NOTE: weights can be floats in [0, 1] or one interaction type (eg "pp")
 
     returns:
-    - interactome: type=networkx.Graph
+    - interactome: edge list, type=numpy.array
     '''
-    interactome = networkx.Graph()
+    num_nodes = 0
     num_edges = 0
+    nodes = {}
+    interactome = []
 
     try:
         f = open(interactome_file, 'r')
@@ -55,21 +57,28 @@ def parse_interactome(interactome_file, weighted) -> networkx.Graph:
                          interactome_file, line)
             raise Exception("Bad line in the interactome file")
 
-        gene1, weight, gene2 = split_line
+        node1, weight, node2 = split_line
 
-        # exclude self-interactions
-        if gene1 == gene2:
-            continue
-        # else: populate structures
+        # add node IDs if not in interactome
+        if node1 not in nodes:
+            nodes[node1] = num_nodes
+            num_nodes += 1
+        if node2 not in nodes:
+            nodes[node2] = num_nodes
+            num_nodes += 1
+
+        # add edge
         if weighted:
-            interactome.add_edge(gene1, gene2, weight=float(weight))
+            edge = [nodes[node1], float(weight), nodes[node2]]
         else:
-            interactome.add_edge(gene1, gene2)
+            edge = [nodes[node1], 1, nodes[node2]]
+        interactome.append(edge)
         num_edges += 1
 
-    logger.info("built non-redundant network from %i non-self interactions, " +
-                "resulting in %i edges between %i nodes",
-                num_edges, len(interactome.edges()), len(interactome.nodes))
+    interactome = numpy.array(interactome)
+
+    logger.info("built non-redundant network with %i edges between %i nodes",
+                num_edges, num_nodes)
     return interactome
 
 

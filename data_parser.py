@@ -27,7 +27,7 @@ import numpy
 logger = logging.getLogger(__name__)
 
 
-def parse_interactome(interactome_file, weighted):
+def parse_interactome(interactome_file, weighted, directed):
     '''
     Creates an edge list representing the interactome
 
@@ -35,14 +35,16 @@ def parse_interactome(interactome_file, weighted):
     - interactome_file: filename (with path) of interactome in SIF format
       (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2), type=str
       NOTE: weights can be floats in [0, 1] or one interaction type (eg "pp")
+    - weighted: bool, provided by the user
+    - directed: bool, provided by the user
 
     returns:
-    - interactome: edge list, type=numpy.array
+    - interactome: type=dict, key=(node1, node2), value=weight
     '''
     num_nodes = 0
     num_edges = 0
     nodes = {}
-    interactome = []
+    interactome = {}
 
     try:
         f = open(interactome_file, 'r')
@@ -59,7 +61,7 @@ def parse_interactome(interactome_file, weighted):
 
         node1, weight, node2 = split_line
 
-        # add node IDs if not in interactome
+        # assign unique indices to nodes
         if node1 not in nodes:
             nodes[node1] = num_nodes
             num_nodes += 1
@@ -67,13 +69,27 @@ def parse_interactome(interactome_file, weighted):
             nodes[node2] = num_nodes
             num_nodes += 1
 
-        # add edge
         if weighted:
-            edge = [nodes[node1], float(weight), nodes[node2]]
+            if directed:
+                interactome[(nodes[node1], nodes[node2])] = float(weight)
+                num_edges += 1
+                continue
+            else:
+                # die if reverse link exists with another weight
+                if (nodes[node2], nodes[node1]) in interactome:
+                    reverse_weight = interactome[(nodes[node2], nodes[node1])]
+                    if reverse_weight != float(weight):
+                        logger.error("SIF file %s has bad line: %s",
+                                interactome_file, line)
+                        raise Exception("Edge already exists with another weight")
+                else:
+                    interactome[(nodes[node1], nodes[node2])] = float(weight)
+                    interactome[(nodes[node2], nodes[node1])] = float(weight)
+                    num_edges += 1
         else:
-            edge = [nodes[node1], 1, nodes[node2]]
-        interactome.append(edge)
-        num_edges += 1
+            interactome[(nodes[node1], nodes[node2])] = 1
+            interactome[(nodes[node2], nodes[node1])] = 1
+            num_edges += 1
 
     interactome = numpy.array(interactome)
 

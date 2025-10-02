@@ -48,12 +48,15 @@ class geneScores(ctypes.Structure):
                 ('scores', ctypes.POINTER(ctypes.c_float))]
 
 
-def calculate_scores(interactome, causal_genes, alpha) -> dict:
+def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, alpha) -> dict:
     '''
     Calculate scores for every gene in the interactome based on the proximity to known causal genes.
 
     arguments:
-    - interactome: type=networkx.Graph
+    - interactome: type=dict, key=(node1, node2), value=weight
+    - ENSG2idx: type=dict, key=ENSG, value=index in interactome
+    - num_nodes: type=int
+    - num_edges: type=int
     - causal_genes: dict of causal genes with key=ENSG, value=1
     - alpha: attenuation coefficient (parameter set by user)
 
@@ -117,7 +120,7 @@ def calculate_scores(interactome, causal_genes, alpha) -> dict:
 def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed):
 
     logger.info("Parsing interactome")
-    interactome, ENSG2idx = data_parser.parse_interactome(interactome_file, weighted, directed)
+    interactome, ENSG2idx, num_nodes, num_edges = data_parser.parse_interactome(interactome_file, weighted, directed)
 
     logger.info("Parsing gene-to-ENSG mapping")
     ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
@@ -125,10 +128,8 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx)
 
-    sys.exit()
-
     logger.info("Calculating scores")
-    scores = calculate_scores(interactome, causal_genes, alpha)
+    scores = calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, alpha)
 
     logger.info("Printing scores")
     data_parser.scores_to_TSV(scores, ENSG2gene)

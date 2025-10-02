@@ -101,7 +101,7 @@ def parse_interactome(interactome_file, weighted, directed):
 
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
-    return interactome, ENSG2idx
+    return interactome, ENSG2idx, num_nodes, num_edges
 
 
 def parse_uniprot(uniprot_file):

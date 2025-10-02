@@ -40,7 +40,7 @@ class edge(ctypes.Structure):
 class network(ctypes.Structure):
     _fields_ = [('nbNodes', ctypes.c_uint),
                 ('nbEdges', ctypes.c_uint),
-                ('edges', edge)]
+                ('edges', ctypes.POINTER(edge))]
 
 class geneScores(ctypes.Structure):
     _fields_ = [('nbGenes', ctypes.c_uint),
@@ -108,7 +108,7 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
     res = geneScores(nbGenes=len(causal_genes_vec), scores=ctypes.cast(scores_vec, ctypes.POINTER(ctypes.c_float)))
 
     gbaLibrary.gbaCentrality(
-        ctypes.byref(A),
+        ctypes.byref(N),
         ctypes.byref(causal),
         ctypes.c_float(alpha),
         ctypes.byref(res)

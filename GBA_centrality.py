@@ -118,7 +118,7 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
 
     scores = dict(zip(ENSG2idx.keys(), res_scores))  # map scores to genes
 
-    return scores
+    return(scores)
 
 
 def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed):

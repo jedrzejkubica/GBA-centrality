@@ -101,7 +101,7 @@ def parse_interactome(interactome_file, weighted, directed):
 
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
-    return interactome, ENSG2idx, num_nodes, num_edges
+    return(interactome, ENSG2idx, num_nodes, num_edges)
 
 
 def parse_uniprot(uniprot_file):
@@ -161,7 +161,7 @@ def parse_uniprot(uniprot_file):
         gene2ENSG[geneName] = ENSG
         uniprot2ENSG[AC_primary] = ENSG
 
-    return ENSG2gene, gene2ENSG, uniprot2ENSG
+    return(ENSG2gene, gene2ENSG, uniprot2ENSG)
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx) -> dict:
@@ -206,7 +206,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx) -> dict:
     logger.info("found %i causal genes with known ENSG",
                 len(causal_genes))
 
-    return causal_genes
+    return(causal_genes)
 
 
 def scores_to_TSV(scores, ENSG2gene):

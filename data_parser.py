@@ -38,10 +38,11 @@ def parse_interactome(interactome_file, weighted, directed):
 
     returns:
     - interactome: type=dict, key=(node1, node2), value=weight
+    - ENSG2idx: type=dict, key=ENSG, value=index in interactome
     '''
     num_nodes = 0
     num_edges = 0
-    nodes = {}
+    ENSG2idx = {}
     interactome = {}
 
     try:
@@ -60,11 +61,11 @@ def parse_interactome(interactome_file, weighted, directed):
         node1, weight, node2 = split_line
 
         # assign unique indices to nodes
-        if node1 not in nodes:
-            nodes[node1] = num_nodes
+        if node1 not in ENSG2idx:
+            ENSG2idx[node1] = num_nodes
             num_nodes += 1
-        if node2 not in nodes:
-            nodes[node2] = num_nodes
+        if node2 not in ENSG2idx:
+            ENSG2idx[node2] = num_nodes
             num_nodes += 1
 
         if weighted:
@@ -78,32 +79,29 @@ def parse_interactome(interactome_file, weighted, directed):
 
         
         if directed:
-            interactome[(nodes[node1], nodes[node2])] = w
+            interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
             num_edges += 1
         else:
             if weighted:
                 # die if reverse edge has a different weight
-                if (nodes[node2], nodes[node1]) in interactome:
-                    reverse_weight = interactome[(nodes[node2], nodes[node1])]
+                if (ENSG2idx[node2], ENSG2idx[node1]) in interactome:
+                    reverse_weight = interactome[(ENSG2idx[node2], ENSG2idx[node1])]
                     if reverse_weight != w:
                         logger.error("SIF file %s has bad line: %s",
                                     interactome_file, line)
                         raise Exception(f"Edge already exists with another weight: {reverse_weight}")
                 else:
-                    interactome[(nodes[node1], nodes[node2])] = w
-                    interactome[(nodes[node2], nodes[node1])] = w
+                    interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
+                    interactome[(ENSG2idx[node2], ENSG2idx[node1])] = w
                     num_edges += 1
             else:
-                interactome[(nodes[node1], nodes[node2])] = w
-                interactome[(nodes[node2], nodes[node1])] = w
+                interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
+                interactome[(ENSG2idx[node2], ENSG2idx[node1])] = w
                 num_edges += 1
-
-
-    print(interactome)
 
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
-    return interactome
+    return interactome, ENSG2idx
 
 
 def parse_uniprot(uniprot_file):
@@ -166,7 +164,7 @@ def parse_uniprot(uniprot_file):
     return ENSG2gene, gene2ENSG, uniprot2ENSG
 
 
-def parse_causal_genes(causal_genes_file, gene2ENSG, interactome) -> dict:
+def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx) -> dict:
     '''
     Build a dict of causal ENSGs for phenotype
 
@@ -174,7 +172,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome) -> dict:
     - causal_genes_file: filename (with path) of known causal genes TXT file
       with 1 column: gene_name, type=str
     - gene2ENSG: dict of all known genes, key=gene_name, value=ENSG
-    - interactome: networkx.Graph
+    - ENSG2idx: type=dict, key=ENSG, value=index in interactome
 
     returns:
     - causal_genes: dict of all causal genes present in interactome, with key=ENSG, value=1
@@ -197,7 +195,7 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, interactome) -> dict:
 
         if gene_name in gene2ENSG:
             ENSG = gene2ENSG[gene_name]
-            if ENSG in interactome:
+            if ENSG in ENSG2idx:
                 causal_genes[ENSG] = 1
             else:
                 logger.warning("causal gene %s == %s is not in interactome, skipping it",

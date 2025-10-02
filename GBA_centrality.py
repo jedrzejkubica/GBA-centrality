@@ -25,7 +25,6 @@ import ctypes
 import argparse
 
 import numpy
-import networkx
 
 import data_parser
 
@@ -74,23 +73,28 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
     ]
     gbaLibrary.gbaCentrality.restype = None
 
-    # generate adjacencyMatrix
-    weights = networkx.to_numpy_array(interactome, dtype=numpy.float32)
-    weights_1D = weights.flatten()
-    weights_ctype = (ctypes.c_float * len(weights_1D))(*weights_1D)
-    A = adjacencyMatrix(nbCols=len(interactome.nodes()),
-                        weights=weights_ctype)
-    
-    # generate edge list
-    # get node indexing instead of ENSGs
-    
+    # generate network structure
+    edge_list = []
+    i = 0
+    for (source, dest) in interactome:
+        e = edge()
+        e.source = source
+        e.dest = dest
+        e.weight = interactome[(source, dest)]
+        edge_list.append(e)
+        i += 1
+    edge_list_ctype = (edge * num_edges)(*edge_list)
+
+    N = network(nbNodes=num_nodes,
+                nbEdges=num_edges,
+                edges=ctypes.cast(edge_list_ctype, ctypes.POINTER(edge)))
 
     # generate geneScores
     # array for genes in the interactome: 1 if causal gene, 0 otherwise
     # size=len(nodes in interactome), ordered as in interactome.nodes()
-    causal_genes_vec = [0.0] * len(interactome.nodes())
+    causal_genes_vec = [0.0] * num_nodes
     ni = 0
-    for n in interactome.nodes():
+    for n in ENSG2idx:
         if n in causal_genes:
             causal_genes_vec[ni] = 1.0
         ni += 1
@@ -112,7 +116,7 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
 
     res_scores = [res.scores[i] for i in range(res.nbGenes)]
 
-    scores = dict(zip(interactome.nodes(), res_scores))  # map scores to genes
+    scores = dict(zip(ENSG2idx.keys(), res_scores))  # map scores to genes
 
     return scores
 

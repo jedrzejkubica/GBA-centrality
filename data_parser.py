@@ -70,26 +70,38 @@ def parse_interactome(interactome_file, weighted, directed):
             num_nodes += 1
 
         if weighted:
-            if directed:
-                interactome[(nodes[node1], nodes[node2])] = float(weight)
-                num_edges += 1
-                continue
-            else:
-                # die if reverse link exists with another weight
+            try:
+                w = float(weight)
+            except:
+                logger.error("SIF file %s has bad line: %s", interactome_file, line)
+                raise Exception(f"--weighted={weighted} but given weight is not a number")
+        else:
+            w = 1.0
+
+        
+        if directed:
+            interactome[(nodes[node1], nodes[node2])] = w
+            num_edges += 1
+        else:
+            if weighted:
+                # die if reverse edge has a different weight
                 if (nodes[node2], nodes[node1]) in interactome:
                     reverse_weight = interactome[(nodes[node2], nodes[node1])]
-                    if reverse_weight != float(weight):
+                    if reverse_weight != w:
                         logger.error("SIF file %s has bad line: %s",
-                                interactome_file, line)
-                        raise Exception("Edge already exists with another weight")
+                                    interactome_file, line)
+                        raise Exception(f"Edge already exists with another weight: {reverse_weight}")
                 else:
-                    interactome[(nodes[node1], nodes[node2])] = float(weight)
-                    interactome[(nodes[node2], nodes[node1])] = float(weight)
+                    interactome[(nodes[node1], nodes[node2])] = w
+                    interactome[(nodes[node2], nodes[node1])] = w
                     num_edges += 1
-        else:
-            interactome[(nodes[node1], nodes[node2])] = 1
-            interactome[(nodes[node2], nodes[node1])] = 1
-            num_edges += 1
+            else:
+                interactome[(nodes[node1], nodes[node2])] = w
+                interactome[(nodes[node2], nodes[node1])] = w
+                num_edges += 1
+
+
+    print(interactome)
 
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)

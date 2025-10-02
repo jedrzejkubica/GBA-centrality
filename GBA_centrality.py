@@ -91,13 +91,11 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
 
     # generate geneScores
     # array for genes in the interactome: 1 if causal gene, 0 otherwise
-    # size=len(nodes in interactome), ordered as in interactome.nodes()
+    # size=len(nodes in interactome), ordered according to ENSG2idx
     causal_genes_vec = [0.0] * num_nodes
-    ni = 0
     for n in ENSG2idx:
         if n in causal_genes:
-            causal_genes_vec[ni] = 1.0
-        ni += 1
+            causal_genes_vec[ENSG2idx[n]] = 1.0
 
     causal_genes_ctype = (ctypes.c_float * len(causal_genes_vec))(*causal_genes_vec)
     causal = geneScores(nbGenes=len(causal_genes_vec),
@@ -116,7 +114,10 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
 
     res_scores = [res.scores[i] for i in range(res.nbGenes)]
 
-    scores = dict(zip(ENSG2idx.keys(), res_scores))  # map scores to genes
+    # map scores to genes
+    scores = {}
+    for n in ENSG2idx:
+        scores[n] = res_scores[ENSG2idx[n]]
 
     return(scores)
 

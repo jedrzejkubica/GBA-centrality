@@ -91,8 +91,6 @@ def parse_interactome(interactome_file, weighted, directed):
             interactome[(nodes[node2], nodes[node1])] = 1
             num_edges += 1
 
-    interactome = numpy.array(interactome)
-
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
     return interactome

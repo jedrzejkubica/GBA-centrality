@@ -20,8 +20,6 @@ import logging
 
 import re
 
-import numpy
-
 
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)

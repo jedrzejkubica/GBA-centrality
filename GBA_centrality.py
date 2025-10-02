@@ -31,6 +31,8 @@ import data_parser
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
 
+SCORETYPE = ctypes.c_double
+
 
 class edge(ctypes.Structure):
     _fields_ = [('source', ctypes.c_uint),
@@ -44,7 +46,7 @@ class network(ctypes.Structure):
 
 class geneScores(ctypes.Structure):
     _fields_ = [('nbGenes', ctypes.c_uint),
-                ('scores', ctypes.POINTER(ctypes.c_float))]
+                ('scores', ctypes.POINTER(SCORETYPE))]
 
 
 def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, alpha) -> dict:
@@ -96,13 +98,14 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
         if n in causal_genes:
             causal_genes_vec[ENSG2idx[n]] = 1.0
 
-    causal_genes_ctype = (ctypes.c_float * len(causal_genes_vec))(*causal_genes_vec)
+    causal_genes_ctype = (SCORETYPE * len(causal_genes_vec))(*causal_genes_vec)
     causal = geneScores(nbGenes=len(causal_genes_vec),
                         scores=causal_genes_ctype)
 
-    scores_vec = (ctypes.c_float * len(causal_genes_vec))()
+    scores_vec = (SCORETYPE * len(causal_genes_vec))()
 
-    res = geneScores(nbGenes=len(causal_genes_vec), scores=ctypes.cast(scores_vec, ctypes.POINTER(ctypes.c_float)))
+    res = geneScores(nbGenes=len(causal_genes_vec),
+                     scores=ctypes.cast(scores_vec, ctypes.POINTER(SCORETYPE)))
 
     gbaLibrary.gbaCentrality(
         ctypes.byref(N),

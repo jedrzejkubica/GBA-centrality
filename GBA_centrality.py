@@ -176,12 +176,10 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument('--weighted',
                         help='use if graph is weighted',
-                        default=False,
-                        type=bool)
+                        action='store_true')  # if present, set the value to True; otherwise False
     parser.add_argument('--directed',
                         help='use if graph is directed',
-                        default=False,
-                        type=bool)
+                        action='store_true')
 
     args = parser.parse_args()
 

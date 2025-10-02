@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class edge(ctypes.Structure):
     _fields_ = [('source', ctypes.c_uint),
                 ('dest', ctypes.c_uint),
-                ('weights', ctypes.c_float)]
+                ('weight', ctypes.c_float)]
     
 class network(ctypes.Structure):
     _fields_ = [('nbNodes', ctypes.c_uint),

@@ -34,17 +34,17 @@ logger = logging.getLogger(__name__)
 SCORETYPE = ctypes.c_double
 
 
-class edge(ctypes.Structure):
+class EDGE(ctypes.Structure):
     _fields_ = [('source', ctypes.c_uint),
                 ('dest', ctypes.c_uint),
                 ('weight', ctypes.c_float)]
     
-class network(ctypes.Structure):
+class NETWORK(ctypes.Structure):
     _fields_ = [('nbNodes', ctypes.c_uint),
                 ('nbEdges', ctypes.c_uint),
-                ('edges', ctypes.POINTER(edge))]
+                ('edges', ctypes.POINTER(EDGE))]
 
-class geneScores(ctypes.Structure):
+class GENESCORES(ctypes.Structure):
     _fields_ = [('nbGenes', ctypes.c_uint),
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
@@ -68,25 +68,25 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
     gbaLibrary = ctypes.CDLL(so_file)
     # declare function signature
     gbaLibrary.gbaCentrality.argtypes = [
-        ctypes.POINTER(network),
-        ctypes.POINTER(geneScores),
+        ctypes.POINTER(NETWORK),
+        ctypes.POINTER(GENESCORES),
         ctypes.c_float,
-        ctypes.POINTER(geneScores)
+        ctypes.POINTER(GENESCORES)
     ]
     gbaLibrary.gbaCentrality.restype = None
 
     # generate network structure
     edge_list = []
     for (source, dest) in interactome:
-        e = edge(source=source,
+        e = EDGE(source=source,
                  dest=dest,
                  weight=interactome[(source, dest)])
         
         edge_list.append(e)
 
-    edge_list_ctype = (edge * len(edge_list))(*edge_list)
+    edge_list_ctype = (EDGE * len(edge_list))(*edge_list)
 
-    N = network(nbNodes=num_nodes,
+    N = NETWORK(nbNodes=num_nodes,
                 nbEdges=num_edges,
                 edges=edge_list_ctype)
 
@@ -99,11 +99,11 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
             causal_genes_vec[ENSG2idx[n]] = 1.0
 
     causal_genes_ctype = (SCORETYPE * len(causal_genes_vec))(*causal_genes_vec)
-    causal = geneScores(nbGenes=len(causal_genes_vec),
+    causal = GENESCORES(nbGenes=len(causal_genes_vec),
                         scores=causal_genes_ctype)
 
     scores_vec = (SCORETYPE * len(causal_genes_vec))()
-    res = geneScores(nbGenes=len(causal_genes_vec),
+    res = GENESCORES(nbGenes=len(causal_genes_vec),
                      scores=scores_vec)
 
     gbaLibrary.gbaCentrality(

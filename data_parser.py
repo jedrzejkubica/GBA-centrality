@@ -233,21 +233,19 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx):
     return(causal_genes)
 
 
-def scores_to_TSV(scores, ENSG2gene):
+def scores_to_TSV(scores, ENSG2gene, ENSG2idx):
     '''
     Print scores to stdout in TSV format, 3 columns: ENSG gene_name score
 
     arguments:
-    - scores: dict with key=ENSG, value=score
+    - scores: list of scores, one per gene
     - ENSG2gene: dict of all known gene names, key=ENSG, value=gene_name
+    - ENSG2idx: type=dict, key=ENSG, value=index in scores
     '''
 
     # header
     print("ENSG\tGENE\tSCORE")
 
-    for ENSG in sorted(scores):
-        # GENE defaults to "" if we don't know the gene name of ENSG
-        gene = ""
-        if ENSG in ENSG2gene:
-            gene = ENSG2gene[ENSG]
-        print(ENSG + "\t" + gene + "\t" + str(scores[ENSG]))
+    for ENSG in ENSG2idx.keys():
+        gene = ENSG2gene[ENSG]
+        print(ENSG + "\t" + gene + "\t" + str(scores[ENSG2idx[ENSG]]))

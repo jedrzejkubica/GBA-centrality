@@ -21,121 +21,119 @@ import sys
 import logging
 import pathlib
 import ctypes
-
 import argparse
-
-import numpy
 
 import data_parser
 
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
 
+# SCORETYPE has to be identical to SCORETYPE in GBA-centrality-C/scores.h
 SCORETYPE = ctypes.c_double
 
 
-class EDGE(ctypes.Structure):
+# following classes must match those in GBA-centrality-C/network.h and
+# GBA-centrality-C/scores.h
+class Edge(ctypes.Structure):
     _fields_ = [('source', ctypes.c_uint),
                 ('dest', ctypes.c_uint),
                 ('weight', ctypes.c_float)]
-    
-class NETWORK(ctypes.Structure):
+
+
+class Network(ctypes.Structure):
     _fields_ = [('nbNodes', ctypes.c_uint),
                 ('nbEdges', ctypes.c_uint),
-                ('edges', ctypes.POINTER(EDGE))]
+                ('edges', ctypes.POINTER(Edge))]
 
-class GENESCORES(ctypes.Structure):
+
+class GeneScores(ctypes.Structure):
     _fields_ = [('nbGenes', ctypes.c_uint),
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
 
-def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, alpha) -> dict:
+def calculate_scores(interactome, ENSG2idx, causal_genes, alpha):
     '''
     Calculate scores for every gene in the interactome based on the proximity to known causal genes.
 
     arguments:
-    - interactome: type=dict, key=(node1, node2), value=weight
-    - ENSG2idx: type=dict, key=ENSG, value=index in interactome
-    - num_nodes: type=int
-    - num_edges: type=int
-    - causal_genes: dict of causal genes with key=ENSG, value=1
+    - interactome: list of "edges", an edge is a tuple (source, dest, weight) where
+      source and dest are ints, and weight is a float
+    - ENSG2idx: type=dict, key=ENSG, value=unique identifier for the ENSG, these are
+      consecutive ints starting at 0
+    - causal_genes: list of floats of length num_genes, value=1 if gene is causal and 0 otherwise
     - alpha: attenuation coefficient (parameter set by user)
 
     returns:
-    - scores: dict with key=ENSG, value=score
+    - scores: list of floats of length num_genes, value=score in the same order as causal_genes
     '''
     so_file = "./GBA-centrality-C/gbaCentrality.so"
     gbaLibrary = ctypes.CDLL(so_file)
     # declare function signature
     gbaLibrary.gbaCentrality.argtypes = [
-        ctypes.POINTER(NETWORK),
-        ctypes.POINTER(GENESCORES),
+        ctypes.POINTER(Network),
+        ctypes.POINTER(GeneScores),
         ctypes.c_float,
-        ctypes.POINTER(GENESCORES)
+        ctypes.POINTER(GeneScores)
     ]
     gbaLibrary.gbaCentrality.restype = None
 
-    # generate network structure
-    edge_list = []
-    for (source, dest) in interactome:
-        e = EDGE(source=ctypes.c_uint(source),
-                 dest=ctypes.c_uint(dest),
-                 weight=ctypes.c_float(interactome[(source, dest)]))
-        
-        edge_list.append(e)
+    # generate ctypes edges
+    edgesType = Edge * len(interactome)
+    edges = edgesType()
+    edgeIndex = 0
+    for interaction in interactome:
+        (source, dest, weight) = interaction
+        e = Edge(ctypes.c_uint(source),
+                 ctypes.c_uint(dest),
+                 ctypes.c_float(weight))
+        edges[edgeIndex] = e
+        edgeIndex += 1
 
-    edge_list_ctype = (EDGE * len(edge_list))(*edge_list)
+    # generate ctypes network
+    N = Network(ctypes.c_uint(len(ENSG2idx)),
+                ctypes.c_uint(len(interactome)),
+                ctypes.pointer(edges))
 
-    N = NETWORK(nbNodes=num_nodes,
-                nbEdges=num_edges,
-                edges=edge_list_ctype)
+    # generate ctypes causal genes and scores
+    causalGenesType = SCORETYPE * len(ENSG2idx)
+    causalData = causalGenesType()
+    scoresData = causalGenesType()
 
-    # generate geneScores
-    # array for genes in the interactome: 1 if causal gene, 0 otherwise
-    # size=len(nodes in interactome), ordered according to ENSG2idx
-    causal_genes_vec = [0.0] * num_nodes
-    for n in ENSG2idx:
-        if n in causal_genes:
-            causal_genes_vec[ENSG2idx[n]] = 1.0
+    # fill causalData
+    causalIndex = 0
+    for geneIsCausal in causal_genes:
+        causalData[causalIndex] = SCORETYPE(geneIsCausal)
+        causalIndex += 1
 
-    causal_genes_ctype = (SCORETYPE * len(causal_genes_vec))(*causal_genes_vec)
-    causal = GENESCORES(nbGenes=len(causal_genes_vec),
-                        scores=causal_genes_ctype)
-
-    scores_vec = (SCORETYPE * len(causal_genes_vec))()
-    res = GENESCORES(nbGenes=len(causal_genes_vec),
-                     scores=scores_vec)
+    causal = GeneScores(ctypes.c_uint(len(ENSG2idx)),
+                        ctypes.pointer(causalData))
+    scores = GeneScores(ctypes.c_uint(len(ENSG2idx)),
+                        ctypes.pointer(scoresData))
 
     gbaLibrary.gbaCentrality(
         ctypes.byref(N),
         ctypes.byref(causal),
         ctypes.c_float(alpha),
-        ctypes.byref(res)
+        ctypes.byref(scores)
     )
 
-    res_scores = [res.scores[i] for i in range(res.nbGenes)]
-
-    # map scores to genes
-    scores = {}
-    for n in ENSG2idx:
-        scores[n] = res_scores[ENSG2idx[n]]
-
-    return(scores)
+    scoresList = [scores.scores[i] for i in range(scores.nbGenes)]
+    return(scoresList)
 
 
 def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed):
 
     logger.info("Parsing interactome")
-    interactome, ENSG2idx, num_nodes, num_edges = data_parser.parse_interactome(interactome_file, weighted, directed)
+    (interactome, ENSG2idx) = data_parser.parse_interactome(interactome_file, weighted, directed)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    ENSG2gene, gene2ENSG, uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
+    (ENSG2gene, gene2ENSG) = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx)
 
     logger.info("Calculating scores")
-    scores = calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, alpha)
+    scores = calculate_scores(interactome, ENSG2idx, causal_genes, alpha)
 
     logger.info("Printing scores")
     data_parser.scores_to_TSV(scores, ENSG2gene)

@@ -88,7 +88,7 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
 
     N = network(nbNodes=num_nodes,
                 nbEdges=num_edges,
-                edges=ctypes.cast(edge_list_ctype, ctypes.POINTER(edge)))
+                edges=edge_list_ctype)
 
     # generate geneScores
     # array for genes in the interactome: 1 if causal gene, 0 otherwise
@@ -103,9 +103,8 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
                         scores=causal_genes_ctype)
 
     scores_vec = (SCORETYPE * len(causal_genes_vec))()
-
     res = geneScores(nbGenes=len(causal_genes_vec),
-                     scores=ctypes.cast(scores_vec, ctypes.POINTER(SCORETYPE)))
+                     scores=scores_vec)
 
     gbaLibrary.gbaCentrality(
         ctypes.byref(N),

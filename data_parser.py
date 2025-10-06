@@ -164,20 +164,21 @@ def parse_uniprot(uniprot_file):
     return(ENSG2gene, gene2ENSG, uniprot2ENSG)
 
 
-def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx) -> dict:
+def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx, num_genes):
     '''
-    Build a dict of causal ENSGs for phenotype
+    Build a vector of causal ENSGs from causal_genes_file
 
     arguments:
-    - causal_genes_file: filename (with path) of known causal genes TXT file
-      with 1 column: gene_name, type=str
+    - causal_genes_file: filename (with path) of known causal genes, one gene name per line
     - gene2ENSG: dict of all known genes, key=gene_name, value=ENSG
     - ENSG2idx: type=dict, key=ENSG, value=index in interactome
+    - num_genes: total number of ENSGs
 
     returns:
-    - causal_genes: dict of all causal genes present in interactome, with key=ENSG, value=1
+    - causal_genes: list of floats of length num_genes, value=1 if gene is causal and 0 otherwise
     '''
-    causal_genes = {}
+    causal_genes = [0.0] * num_genes
+    num_found_genes = 0
 
     try:
         f_causal = open(causal_genes_file, 'r')
@@ -190,21 +191,24 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx) -> dict:
     for line in f_causal:
         if re_causal.match(line):
             gene_name = line.rstrip()
-        else:
-            raise Exception(f"Bad line in the causal genes file: {line}")
-
-        if gene_name in gene2ENSG:
-            ENSG = gene2ENSG[gene_name]
-            if ENSG in ENSG2idx:
-                causal_genes[ENSG] = 1
+            if gene_name in gene2ENSG:
+                ENSG = gene2ENSG[gene_name]
+                if ENSG in ENSG2idx:
+                    causal_genes[ENSG2idx[ENSG]] = 1.0
+                    num_found_genes += 1
+                else:
+                    logger.warning("causal gene %s == %s is not in interactome, skipping it",
+                                   gene_name, ENSG)
             else:
-                logger.warning("causal gene %s == %s is not in interactome, skipping it",
-                               gene_name, ENSG)
+                logger.warning("causal gene %s is not a known gene in gene2ENSG, skipping it",
+                               gene_name)
+        else:
+            logger.error("Bad line in the causal genes file, doesn't look like a gene name: %s", line)
+            raise Exception("Bad line in the causal genes file")
 
     f_causal.close()
 
-    logger.info("found %i causal genes with known ENSG",
-                len(causal_genes))
+    logger.info("found %i causal genes with known ENSG", num_found_genes)
 
     return(causal_genes)
 

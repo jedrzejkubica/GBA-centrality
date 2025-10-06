@@ -94,7 +94,7 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha):
     # generate ctypes network
     N = Network(ctypes.c_uint(len(ENSG2idx)),
                 ctypes.c_uint(len(interactome)),
-                ctypes.pointer(edges))
+                edges)
 
     # generate ctypes causal genes and scores
     causalGenesType = SCORETYPE * len(ENSG2idx)
@@ -108,9 +108,9 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha):
         causalIndex += 1
 
     causal = GeneScores(ctypes.c_uint(len(ENSG2idx)),
-                        ctypes.pointer(causalData))
+                        causalData)
     scores = GeneScores(ctypes.c_uint(len(ENSG2idx)),
-                        ctypes.pointer(scoresData))
+                        scoresData)
 
     gbaLibrary.gbaCentrality(
         ctypes.byref(N),

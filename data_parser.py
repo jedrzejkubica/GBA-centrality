@@ -17,7 +17,6 @@
 ############################################################################################
 
 import logging
-
 import re
 
 
@@ -31,25 +30,30 @@ def parse_interactome(interactome_file, weighted, directed):
 
     arguments:
     - interactome_file: filename (with path) of interactome in SIF format
-      (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2), type=str
-      NOTE: weights can be floats in [0, 1] or one interaction type (eg "pp")
-    - weighted: bool, provided by the user
-    - directed: bool, provided by the user
+      (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2)
+      NOTE: weights can be floats in ]0, 1] or strings representing interaction type (eg "pp")
+    - weighted: bool, if True second column must be a float in ]0,1]
+    - directed: bool, if False reverse edges (with same weight) are created
 
     returns:
-    - interactome: type=dict, key=(node1, node2), value=weight
-    - ENSG2idx: type=dict, key=ENSG, value=index in interactome
+    - interactome: list of "edges", an edge is a tuple (source, dest, weight) where
+      source and dest are ints, and weight is a float
+    - ENSG2idx: type=dict, key=ENSG, value=unique identifier for the ENSG, these are
+      consecutive ints starting at 0
     '''
     num_nodes = 0
     num_edges = 0
+    interactome = []
     ENSG2idx = {}
-    interactome = {}
 
     try:
         f = open(interactome_file, 'r')
     except Exception as e:
         logger.error("Opening provided SIF interactome file %s: %s", interactome_file, e)
         raise Exception("cannot open provided interactome file")
+
+    # dict: key == "source&dest", value == weight for every edge that has been created
+    edge2weight = {}
 
     for line in f:
         split_line = line.rstrip().split('\t')
@@ -58,9 +62,9 @@ def parse_interactome(interactome_file, weighted, directed):
                          interactome_file, line)
             raise Exception("Bad line in the interactome file, not 3 tab-separated fields")
 
-        node1, weight, node2 = split_line
+        (node1, weight_or_type, node2) = split_line
 
-        # assign unique indices to nodes
+        # assign unique identifiers to nodes
         if node1 not in ENSG2idx:
             ENSG2idx[node1] = num_nodes
             num_nodes += 1
@@ -68,40 +72,55 @@ def parse_interactome(interactome_file, weighted, directed):
             ENSG2idx[node2] = num_nodes
             num_nodes += 1
 
+        weight = 1.0
         if weighted:
             try:
-                w = float(weight)
+                weight = float(weight_or_type)
             except Exception:
                 logger.error("SIF file %s has bad line, --weighted but weight is not a number: %s",
                              interactome_file, line)
                 raise Exception("Bad line in the interactome file, weight is not a number")
-        else:
-            w = 1.0
 
-        if directed:
-            interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
+        # create edge(s)
+        edgeID = str(ENSG2idx[node1]) + '&' + str(ENSG2idx[node2])
+        # make sure same edge wasn't seen before (with different weight)
+        if edgeID in edge2weight:
+            if (edge2weight[edgeID] != weight):
+                logger.error("SIF file %s contains the same interaction several times with different weights, " +
+                             "second occurrence is %s", interactome_file, line)
+                raise Exception("Bad line in the interactome file")
+            # else this edge was seen before with same weight, nothing to do
+        else:
+            # need to create this edge
+            interactome.append((ENSG2idx[node1], ENSG2idx[node2], weight))
             num_edges += 1
-        else:
-            if weighted:
-                # die if reverse edge has a different weight
-                if (ENSG2idx[node2], ENSG2idx[node1]) in interactome:
-                    reverse_weight = interactome[(ENSG2idx[node2], ENSG2idx[node1])]
-                    if reverse_weight != w:
-                        logger.error("SIF file %s has bad line: network is undirected and weighted,", interactome)
-                        logger.error("but an edge has 2 different weights, second occurrence is:\n%s", line)
-                        raise Exception("Bad line in the interactome file, edge present twice")
+            edge2weight[edgeID] = weight
+            if not directed:
+                # make sure that if reverse edge was defined, it has the same weight
+                revEdgeID = str(ENSG2idx[node2]) + '&' + str(ENSG2idx[node1])
+                if (revEdgeID in edge2weight):
+                    if edge2weight[revEdgeID] != weight:
+                        logger.error("SIF file %s contains the same interaction in both directions with different " +
+                                     "weights, but network is undirected and weighted! Second occurrence is: %s",
+                                     interactome_file, line)
+                        raise Exception("Bad line in the interactome file")
+                    # else rev edge exists and has same weight, nothing to do
                 else:
-                    interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
-                    interactome[(ENSG2idx[node2], ENSG2idx[node1])] = w
+                    # create reverse edge
+                    interactome.append((ENSG2idx[node2], ENSG2idx[node1], weight))
                     num_edges += 1
-            else:
-                interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
-                interactome[(ENSG2idx[node2], ENSG2idx[node1])] = w
-                num_edges += 1
+                    edge2weight[revEdgeID] = weight
+            # else network is directed, never create reverse edges
 
+    f.close()
     logger.info("built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
-    return(interactome, ENSG2idx, num_nodes, num_edges)
+    # sanity
+    if (len(ENSG2idx) != num_nodes):
+        logger.error("sanity check failed on num_nodes!")
+    if (len(interactome) != num_edges):
+        logger.error("sanity check failed on num_edges!")
+    return(interactome, ENSG2idx)
 
 
 def parse_uniprot(uniprot_file):

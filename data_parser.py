@@ -119,49 +119,51 @@ def parse_uniprot(uniprot_file):
     Returns:
       - ENSG2gene: dict with key=ENSG, value=geneName
       - gene2ENSG: dict with key=gene, value=ENSG
-      - uniprot2ENSG: dict with key=Primary accession, value=ENSG
 
     Note: if more than one gene name is associated with a particular ENSG,
           then keeping the first gene name from the list
     '''
     ENSG2gene = {}
     gene2ENSG = {}
-    uniprot2ENSG = {}
 
     try:
         f = open(uniprot_file, 'r')
     except Exception as e:
-        logging.error("Opening provided gene2ENSG file %s: %s", uniprot_file, e)
+        logging.error("Opening provided uniprot file %s: %s", uniprot_file, e)
         raise Exception("cannot open provided Uniprot file")
 
     # skip header
-    next(f)
+    line = f.readline()
+    if not line.startswith("Primary_AC\t"):
+        logging.error("uniprot file %s is headerless? expecting headers but got %s",
+                      uniprot_file, line)
+        raise Exception("Uniprot file problem")
 
     for line in f:
         split_line = line.rstrip().split('\t')
 
-        # if some records are incomplete, then skip them
+        # if some records are incomplete, die
         if len(split_line) != 7:
-            continue
+            logging.error("uniprot file %s line doesn't have 7 fields: %s",
+                          uniprot_file, line)
+            raise Exception("Uniprot file problem")
 
-        AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames = split_line
+        (AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames) = split_line
 
-        # keep only the first ENSG (if exists in the file)
+        # make sure there is at least one ENSG and keep only the first one
         if ENSGs == "":
             continue
-        ENSGs_list = ENSGs.rstrip().split(',')
-        ENSG = ENSGs_list[0]
+        ENSG = ENSGs.split(',')[0]
 
-        # if more than one gene name is associated with a particular ENSG,
-        # then keep only the first gene name from the list
-        geneNames_list = geneNames.rstrip().split(',')
-        geneName = geneNames_list[0]
+        # make sure there is at least one gene name and keep only the first one
+        if geneNames == "":
+            continue
+        geneName = geneNames.split(',')[0]
 
         ENSG2gene[ENSG] = geneName
         gene2ENSG[geneName] = ENSG
-        uniprot2ENSG[AC_primary] = ENSG
 
-    return(ENSG2gene, gene2ENSG, uniprot2ENSG)
+    return(ENSG2gene, gene2ENSG)
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx, num_genes):

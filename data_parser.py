@@ -159,7 +159,7 @@ def parse_uniprot(uniprot_file):
         raise Exception("Uniprot file problem")
 
     for line in f:
-        split_line = line.rstrip().split('\t')
+        split_line = line.rstrip('\r\n').split('\t')
 
         # if some records are incomplete, die
         if len(split_line) != 7:

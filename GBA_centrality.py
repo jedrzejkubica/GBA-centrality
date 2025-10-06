@@ -138,7 +138,7 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
     scores = calculate_scores(interactome, ENSG2idx, causal_genes, alpha)
 
     logger.info("Printing scores")
-    data_parser.scores_to_TSV(scores, ENSG2gene)
+    data_parser.scores_to_TSV(scores, ENSG2gene, ENSG2idx)
 
     logger.info("Done!")
 

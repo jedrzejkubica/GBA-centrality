@@ -185,7 +185,7 @@ def parse_uniprot(uniprot_file):
     return(ENSG2gene, gene2ENSG)
 
 
-def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx, num_genes):
+def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx):
     '''
     Build a vector of causal ENSGs from causal_genes_file
 
@@ -193,12 +193,11 @@ def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx, num_genes):
     - causal_genes_file: filename (with path) of known causal genes, one gene name per line
     - gene2ENSG: dict of all known genes, key=gene_name, value=ENSG
     - ENSG2idx: type=dict, key=ENSG, value=index in interactome
-    - num_genes: total number of ENSGs
 
     returns:
-    - causal_genes: list of floats of length num_genes, value=1 if gene is causal and 0 otherwise
+    - causal_genes: list of floats, one per gene, value=1 if gene is causal and 0 otherwise
     '''
-    causal_genes = [0.0] * num_genes
+    causal_genes = [0.0] * len(ENSG2idx)
     num_found_genes = 0
 
     try:

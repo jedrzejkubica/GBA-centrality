@@ -225,9 +225,9 @@ def scores_to_TSV(scores, ENSG2gene):
     # header
     print("ENSG\tGENE\tSCORE")
 
-    for (ENSG, score) in sorted(scores.items()):
+    for ENSG in sorted(scores):
         # GENE defaults to "" if we don't know the gene name of ENSG
         gene = ""
         if ENSG in ENSG2gene:
             gene = ENSG2gene[ENSG]
-        print(ENSG + "\t" + gene + "\t" + str(score))
+        print(ENSG + "\t" + gene + "\t" + str(scores[ENSG]))

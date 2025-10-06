@@ -78,12 +78,12 @@ def calculate_scores(interactome, ENSG2idx, num_nodes, num_edges, causal_genes, 
     # generate network structure
     edge_list = []
     for (source, dest) in interactome:
-        e = edge()
-        e.source = source
-        e.dest = dest
-        e.weight = interactome[(source, dest)]
+        e = edge(source=source,
+                 dest=dest,
+                 weight=interactome[(source, dest)])
+        
         edge_list.append(e)
-    
+
     edge_list_ctype = (edge * len(edge_list))(*edge_list)
 
     N = network(nbNodes=num_nodes,

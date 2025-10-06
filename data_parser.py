@@ -56,7 +56,7 @@ def parse_interactome(interactome_file, weighted, directed):
         if len(split_line) != 3:
             logger.error("SIF file %s has bad line (not 3 tab-separated fields): %s",
                          interactome_file, line)
-            raise Exception("Bad line in the interactome file")
+            raise Exception("Bad line in the interactome file, not 3 tab-separated fields")
 
         node1, weight, node2 = split_line
 
@@ -71,13 +71,13 @@ def parse_interactome(interactome_file, weighted, directed):
         if weighted:
             try:
                 w = float(weight)
-            except:
-                logger.error("SIF file %s has bad line: %s", interactome_file, line)
-                raise Exception(f"--weighted={weighted} but given weight is not a number")
+            except Exception:
+                logger.error("SIF file %s has bad line, --weighted but weight is not a number: %s",
+                             interactome_file, line)
+                raise Exception("Bad line in the interactome file, weight is not a number")
         else:
             w = 1.0
 
-        
         if directed:
             interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
             num_edges += 1
@@ -87,9 +87,9 @@ def parse_interactome(interactome_file, weighted, directed):
                 if (ENSG2idx[node2], ENSG2idx[node1]) in interactome:
                     reverse_weight = interactome[(ENSG2idx[node2], ENSG2idx[node1])]
                     if reverse_weight != w:
-                        logger.error("SIF file %s has bad line: %s",
-                                    interactome_file, line)
-                        raise Exception(f"Edge already exists with another weight: {reverse_weight}")
+                        logger.error("SIF file %s has bad line: network is undirected and weighted,", interactome)
+                        logger.error("but an edge has 2 different weights, second occurrence is:\n%s", line)
+                        raise Exception("Bad line in the interactome file, edge present twice")
                 else:
                     interactome[(ENSG2idx[node1], ENSG2idx[node2])] = w
                     interactome[(ENSG2idx[node2], ENSG2idx[node1])] = w

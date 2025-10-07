@@ -16,17 +16,15 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
 ```
 
-This repository uses the [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C) library. GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
+This repository uses [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
 
 ```
-git submodule add https://github.com/jedrzejkubica/GBA-centrality-C
-```
-
-```
+cd GBA-centrality/
+git config submodule.GBA-centrality-C.url git@github.com:jedrzejkubica/GBA-centrality-C.git
+git submodule init
+git submodule update
+(for development) git checkout submodule-in-C ; git submodule update
 cd GBA-centrality-C
-```
-
-```
 make
 ```
 
@@ -44,13 +42,11 @@ python ~/Software/GBA-centrality/GBA_centrality.py \
 
 ### Parameters
 
-GBA centrality allows the user to set two parameters:
-- alpha (default = 0.5) - attenuation coefficient; 0 < alpha < 1
-- dmax (default = 5) - propagation distance; max. distance for a causal gene to contibute to a gene's score
+GBA centrality allows the user to set alpha - attenuation coefficient (0 < alpha < 1 ; default = 0.5).
 
 Example:
 ```
-python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 --dmax 5 [...]
+python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 [...]
 ```
 
 ## How to prepare input data
@@ -148,9 +144,9 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
 > [!NOTE]
 > The build_interactome.py script maps protein Uniprot IDs to gene ENSG IDs using the parsed Uniprot file.
 
-### TXT file with known disease-associated genes
+### File with known disease-associated genes
 
-Create a TXT file `causal_genes.txt` (without a header) with only one column: gene_name
+Create a file `causal_genes.txt` (without a header) with one known causal gene name per line.
 
 > [!NOTE]
 > GBA centrality maps causal gene names to ENSG IDs using the parsed Uniprot file.
@@ -159,15 +155,14 @@ Create a TXT file `causal_genes.txt` (without a header) with only one column: ge
 
 ### Python environment
 
-GBA centrality is written in Python :snake: and requires the following dependencies: [NumPy](https://numpy.org/) and [NetworkX](https://networkx.org/).
+GBA centrality is written in Python :snake:
 
-We recommend installing them via [Python venv](https://docs.python.org/3/library/venv.html) with the following command:
+We recommend setting up a [Python venv](https://docs.python.org/3/library/venv.html) with the following command:
 
 ```
 python -m venv --system-site-packages ~/pyEnv_GBA-centrality
 source ~/pyEnv_GBA-centrality/bin/activate
 pip install --upgrade pip
-pip install numpy networkx
 ```
 
 You can then run GBA-centrality with:

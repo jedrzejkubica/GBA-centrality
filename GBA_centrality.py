@@ -23,8 +23,6 @@ import pathlib
 import ctypes
 import argparse
 
-import traceback
-
 import data_parser
 
 # set up logger, using inherited config, in case we get called as a module
@@ -201,5 +199,4 @@ if __name__ == "__main__":
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die
         sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
-        traceback.print_exc()
         sys.exit(1)

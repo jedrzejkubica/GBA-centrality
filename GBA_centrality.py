@@ -126,6 +126,9 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
     logger.info("Parsing interactome")
     (interactome, ENSG2idx) = data_parser.parse_interactome(interactome_file, weighted, directed)
 
+    # some genes of interest for debugging: ZMYND12==ENSG00000066185 , TTC29==ENSG00000137473
+    logger.debug("ZMYND12==%i, TTC29==%i", ENSG2idx['ENSG00000066185'], ENSG2idx['ENSG00000137473'])
+
     logger.info("Parsing gene-to-ENSG mapping")
     (ENSG2gene, gene2ENSG) = data_parser.parse_uniprot(uniprot_file)
 

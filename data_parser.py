@@ -248,4 +248,5 @@ def scores_to_TSV(scores, ENSG2gene, ENSG2idx):
 
     for ENSG in ENSG2idx.keys():
         gene = ENSG2gene[ENSG]
-        print(ENSG + "\t" + gene + "\t" + str(scores[ENSG2idx[ENSG]]))
+        score = scores[ENSG2idx[ENSG]]
+        print(ENSG + "\t" + gene + "\t" + "{:.3g}".format(score))

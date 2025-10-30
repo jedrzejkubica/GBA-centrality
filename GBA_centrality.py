@@ -29,7 +29,7 @@ import data_parser
 logger = logging.getLogger(__name__)
 
 # SCORETYPE has to be identical to SCORETYPE in GBA-centrality-C/scores.h
-SCORETYPE = ctypes.c_double
+SCORETYPE = ctypes.c_float
 
 
 # following classes must match those in GBA-centrality-C/network.h and
@@ -41,13 +41,13 @@ class Edge(ctypes.Structure):
 
 
 class Network(ctypes.Structure):
-    _fields_ = [('nbNodes', ctypes.c_uint),
-                ('nbEdges', ctypes.c_uint),
+    _fields_ = [('nbNodes', ctypes.c_ulong),
+                ('nbEdges', ctypes.c_ulong),
                 ('edges', ctypes.POINTER(Edge))]
 
 
 class GeneScores(ctypes.Structure):
-    _fields_ = [('nbGenes', ctypes.c_uint),
+    _fields_ = [('nbGenes', ctypes.c_size_t),
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
 

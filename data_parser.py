@@ -40,11 +40,13 @@ def parse_interactome(interactome_file, weighted, directed):
       source and dest are ints, and weight is a float
     - ENSG2idx: type=dict, key=ENSG, value=unique identifier for the ENSG, these are
       consecutive ints starting at 0
+    - idx2ENSG: type=dict, key=unique identifier for the ENSG, value=ENSG
     '''
     num_nodes = 0
     num_edges = 0
     interactome = []
     ENSG2idx = {}
+    idx2ENSG = {}
 
     try:
         f = open(interactome_file, 'r')
@@ -67,9 +69,11 @@ def parse_interactome(interactome_file, weighted, directed):
         # assign unique identifiers to nodes
         if node1 not in ENSG2idx:
             ENSG2idx[node1] = num_nodes
+            idx2ENSG[num_nodes] = node1
             num_nodes += 1
         if node2 not in ENSG2idx:
             ENSG2idx[node2] = num_nodes
+            idx2ENSG[num_nodes] = node2
             num_nodes += 1
 
         weight = 1.0
@@ -120,7 +124,7 @@ def parse_interactome(interactome_file, weighted, directed):
         logger.error("sanity check failed on num_nodes!")
     if (len(interactome) != num_edges):
         logger.error("sanity check failed on num_edges!")
-    return(interactome, ENSG2idx)
+    return(interactome, ENSG2idx, idx2ENSG)
 
 
 def parse_uniprot(uniprot_file):
@@ -138,12 +142,14 @@ def parse_uniprot(uniprot_file):
     Returns:
       - ENSG2gene: dict with key=ENSG, value=geneName
       - gene2ENSG: dict with key=gene, value=ENSG
+      - uniprot2ENSGG: dict with key=Primary accession, value=ENSG
 
     Note: if more than one gene name is associated with a particular ENSG,
           then keeping the first gene name from the list
     '''
     ENSG2gene = {}
     gene2ENSG = {}
+    uniprot2ENSG = {}
 
     try:
         f = open(uniprot_file, 'r')
@@ -181,8 +187,9 @@ def parse_uniprot(uniprot_file):
 
         ENSG2gene[ENSG] = geneName
         gene2ENSG[geneName] = ENSG
+        uniprot2ENSG[AC_primary] = ENSG
 
-    return(ENSG2gene, gene2ENSG)
+    return(ENSG2gene, gene2ENSG, uniprot2ENSG)
 
 
 def parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx):

@@ -124,13 +124,10 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode):
 def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed, pathToCode):
 
     logger.info("Parsing interactome")
-    (interactome, ENSG2idx) = data_parser.parse_interactome(interactome_file, weighted, directed)
-
-    # some genes of interest for debugging: ZMYND12==ENSG00000066185 , TTC29==ENSG00000137473
-    logger.debug("ZMYND12==%i, TTC29==%i", ENSG2idx['ENSG00000066185'], ENSG2idx['ENSG00000137473'])
+    (interactome, ENSG2idx, idx2ENSG) = data_parser.parse_interactome(interactome_file, weighted, directed)
 
     logger.info("Parsing gene-to-ENSG mapping")
-    (ENSG2gene, gene2ENSG) = data_parser.parse_uniprot(uniprot_file)
+    (ENSG2gene, gene2ENSG, uniprot2ENSG) = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx)

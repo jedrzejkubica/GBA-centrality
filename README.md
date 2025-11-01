@@ -14,16 +14,15 @@ mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
 
 ```
 git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
+cd ~/Software/GBA-centrality
 ```
 
-This repository uses [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). GBA_centrality.py uses the GBA-centrality-C shared object (.so file) created using the following commands:
+This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). Here `GBA_centrality.py` uses the GBA-centrality-C shared object (.so file) created using the following commands:
 
 ```
-cd GBA-centrality/
 git config submodule.GBA-centrality-C.url git@github.com:jedrzejkubica/GBA-centrality-C.git
 git submodule init
 git submodule update
-(for development) git checkout submodule-in-C ; git submodule update
 cd GBA-centrality-C
 make
 ```
@@ -36,24 +35,19 @@ python ~/Software/GBA-centrality/GBA_centrality.py \
   --interactome ~/GBA-input/interactome_human.sif \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
   --causal ~/GBA-input/causal_genes.txt \
+  --alpha 0.5 \
   1> ~/GBA-output/scores.tsv \
   2> ~/GBA-output/log.txt
 ```
 
-### Parameters
+GBA centrality allows the user to set attenuation coefficient `--alpha`  (0 < alpha < 1 ; default = 0.5).
 
-GBA centrality allows the user to set alpha - attenuation coefficient (0 < alpha < 1 ; default = 0.5).
-
-Example:
-```
-python ~/Software/GBA-centrality/GBA_centrality.py --alpha 0.5 [...]
-```
 
 ## How to prepare input data
 
 ### Uniprot file
 
-This file will be used for mapping between Uniprot protein IDs to gene ENSG IDs and gene names to gene ENSG IDs.
+This file will be used for mapping of gene ENSG IDs to Uniprot protein IDs and gene names.
 
 Download and parse Uniprot dataset (.gz file size ~651M):
 
@@ -65,7 +59,11 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
-Below we provide commands for constructing a human interactome (undirected and unweighted) using protein-protein interaction datasets from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data). The interactome file has 3 tab-separated columns: ENSG1 "pp" ENSG2. It can be modified to create a weighted graph by replacing "pp" with weights (0 < weight < 1). If so, use `--weighted` parameter when running GBA centrality.
+Below we provide commands for constructing a human interactome (undirected and unweighted) using protein-protein interaction datasets from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data). The interactome file has 3 tab-separated columns: ENSG1 "pp" ENSG2. It can be modified to be directed and/or weighted. For a weighted graph replace "pp" with weights (0 < weight < 1) and use `--weighted` parameter. For a directed graph use `--directed` parameter. Example:
+
+```
+python ~/Software/GBA-centrality/GBA_centrality.py --weighted --directed [...]
+```
 
 **Step 1. Download and extract human protein-protein interaction data**
 
@@ -123,14 +121,7 @@ python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
 
 **Step 3. Build a high-confidence human interactome**
 
-Here the protein-protein interactions data is filtered as follows:
-- remove complex expansion
-- remove interaction detection methods: genetic interference (MI:0254) and unspecified method (MI:0686)
-- keep interaction types: direct interaction (MI:0407) and physical association (MI:0915)
-- keep interactions if at least one experiment has been proven by a binary interaction method
-- remove interactions proven by Affintity Chromatography Technology (MI:0004)
-- remove self-loops
-- remove the top 1% of proteins with the highest degrees (number of interactions)
+Here the protein-protein interactions data is filtered on Interaction Detection Method and Interaction Type: each interaction has at least 1 experiment abd at least one should be proven by any binary interaction detection method. We also remove the top 1% of proteins with the highest degrees (i.e., artificial hubs).
 
 Then the data is merged into one SIF file. Further details about the SIF format can be found here: https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format
 
@@ -149,9 +140,7 @@ python ~/Software/GBA-centrality/Interactome/build_interactome.py \
 Create a file `causal_genes.txt` (without a header) with one known causal gene name per line.
 
 > [!NOTE]
-> GBA centrality maps causal gene names to ENSG IDs using the parsed Uniprot file.
-> 
-> As gene names, GBA centrality requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
+> GBA centrality maps causal gene names to ENSG IDs using the parsed Uniprot file, thereore as gene names, it requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
 
 ### Python environment
 

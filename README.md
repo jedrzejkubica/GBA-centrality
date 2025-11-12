@@ -20,7 +20,6 @@ cd ~/Software/GBA-centrality
 This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). Here `GBA_centrality.py` uses the GBA-centrality-C shared object (.so file) created using the following commands:
 
 ```
-git config submodule.GBA-centrality-C.url git@github.com:jedrzejkubica/GBA-centrality-C.git
 git submodule init
 git submodule update
 cd GBA-centrality-C

@@ -6,25 +6,21 @@ GBA centrality is a network propagation algorithm for disease gene prioritizatio
 
 ## 🚀 How to use GBA centrality
 
-We assume here that this repository is cloned into `~/Software/`, input data is downloaded and processed in `~/GBA-input/`, and results will be produced in `~/GBA-output/`. Change these names to your taste and adapt all commands below accordingly. Create these folders with the following command:
+We assume here that this repository is cloned into `~/Software/`, input data is downloaded and processed in `~/GBA-input/`, and results will be produced in `~/GBA-output/`. Change these names to your taste and adapt all commands below accordingly. Create these folders and set up with the following command:
 
 ```
 mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
-```
 
-```
-git clone https://github.com/jedrzejkubica/GBA-centrality.git ~/Software/
-cd ~/Software/GBA-centrality
-```
-
-This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). Here `GBA_centrality.py` uses the GBA-centrality-C shared object (.so file) created using the following commands:
-
-```
+cd ~/Software/
+git clone https://github.com/jedrzejkubica/GBA-centrality.git
+cd GBA-centrality
 git submodule init
 git submodule update
 cd GBA-centrality-C
 make
 ```
+
+This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C). Here `GBA_centrality.py` uses the GBA-centrality-C shared object (.so file) created using the following commands:
 
 As input, GBA centrality takes an interactome SIF file, a parsed Uniprot file and a TXT file with known disease-associated genes.
 

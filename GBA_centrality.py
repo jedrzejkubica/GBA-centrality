@@ -51,7 +51,7 @@ class GeneScores(ctypes.Structure):
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
 
-def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode):
+def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, threads):
     '''
     Calculate scores for every gene in the interactome based on the proximity to known causal genes.
 
@@ -62,10 +62,13 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode):
       consecutive ints starting at 0
     - causal_genes: list of floats of length num_genes, value=1 if gene is causal and 0 otherwise
     - alpha: attenuation coefficient (parameter set by user)
+    - threads: number of threads to use, 0 to use all available cores
 
     returns:
     - scores: list of floats of length num_genes, value=score in the same order as causal_genes
     '''
+    if threads:
+        os.environ['OMP_NUM_THREADS'] = str(threads)
     so_file = pathToCode + "/GBA-centrality-C/gbaCentrality.so"
     gbaLibrary = ctypes.CDLL(so_file)
     # declare function signature
@@ -121,7 +124,7 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode):
     return(scoresList)
 
 
-def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed, pathToCode):
+def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed, pathToCode, threads):
 
     logger.info("Parsing interactome")
     (interactome, ENSG2idx, idx2ENSG) = data_parser.parse_interactome(interactome_file, weighted, directed)
@@ -133,7 +136,7 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
     causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx)
 
     logger.info("Calculating scores")
-    scores = calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode)
+    scores = calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, threads)
 
     logger.info("Printing scores")
     data_parser.scores_to_TSV(scores, ENSG2gene, ENSG2idx)
@@ -185,12 +188,16 @@ if __name__ == "__main__":
     parser.add_argument('--directed',
                         help='use if graph is directed',
                         action='store_true')
-
+    parser.add_argument('--threads',
+                        help='number of parallel threads to run, default=0 to use all available cores',
+                        default=0,
+                        type=int)
+ 
     args = parser.parse_args()
 
     try:
         main(args.interactome, args.causal, args.uniprot, args.alpha, args.weighted,
-             args.directed, pathToCode)
+             args.directed, pathToCode, args.threads)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

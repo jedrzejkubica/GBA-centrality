@@ -148,7 +148,10 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
 
     end = time.time()
     usage = resource.getrusage(resource.RUSAGE_SELF)
-    logger.info(f"wall_time={end-start:.6f}s\nuser_time={usage.ru_utime:.6f}s\nsys_time={usage.ru_stime:.6f}s\nmax_rss_kb={usage.ru_maxrss}")
+    logger.info(f"wall_time={end-start:.6f}s")
+    logger.info(f"user_time={usage.ru_utime:.6f}s")
+    logger.info(f"sys_time={usage.ru_stime:.6f}s")
+    logger.info(f"max_rss_kb={usage.ru_maxrss}")
 
 
 if __name__ == "__main__":

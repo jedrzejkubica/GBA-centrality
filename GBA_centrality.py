@@ -23,8 +23,6 @@ import pathlib
 import ctypes
 import argparse
 
-import time, resource
-
 import data_parser
 
 # set up logger, using inherited config, in case we get called as a module
@@ -127,7 +125,6 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, thr
 
 
 def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed, pathToCode, threads):
-    start = time.time() 
 
     logger.info("Parsing interactome")
     (interactome, ENSG2idx, idx2ENSG) = data_parser.parse_interactome(interactome_file, weighted, directed)
@@ -145,13 +142,6 @@ def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, dir
     data_parser.scores_to_TSV(scores, ENSG2gene, ENSG2idx)
 
     logger.info("Done!")
-
-    end = time.time()
-    usage = resource.getrusage(resource.RUSAGE_SELF)
-    logger.info(f"wall_time={end-start:.6f}s")
-    logger.info(f"user_time={usage.ru_utime:.6f}s")
-    logger.info(f"sys_time={usage.ru_stime:.6f}s")
-    logger.info(f"max_rss_kb={usage.ru_maxrss}")
 
 
 if __name__ == "__main__":

@@ -98,67 +98,6 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
     return PPIs
 
 
-def remove_hubs(PPIs):
-    """
-    Parses the output from parse_interactions() list with 5 items (in each sublist):
-    - Protein A Uniprot Primary Accession
-    - Protein B Uniprot Primary Accession
-    - Publication count
-    - PubmedID(s)
-    - Experiment count
-
-    Counts the degree (number of interactions) of each protein.
-    Removes 1% of the highest-degree proteins.
-
-    Returns a list with 5 items (in each sublist):
-    - Protein A Uniprot Primary Accession
-    - Protein B Uniprot Primary Accession
-    - Publication count
-    - PubmedID(s)
-    - Experiment count
-    """
-
-    protein_degrees = {}  # dict with key=Protein Uniprot Primary Accession, value=degree
-    PPIs_noHubs = []
-
-    for PPI in PPIs:
-        proteinA = PPI[0]
-        proteinB = PPI[1]
-
-        if proteinA in protein_degrees:
-            protein_degrees[proteinA] += 1
-        else:
-            protein_degrees[proteinA] = 1
-
-        if proteinB in protein_degrees:
-            protein_degrees[proteinB] += 1
-        else:
-            protein_degrees[proteinB] = 1
-
-    # get top 1% of proteins with the highest degrees (number of interactions)
-    proteins_sorted = sorted(protein_degrees.keys(), key=lambda item: protein_degrees[item], reverse=True)
-    degrees_sorted = [protein_degrees[protein] for protein in proteins_sorted]
-
-    num_elements = round(len(degrees_sorted) * 0.01)
-    hubs = set(proteins_sorted[:num_elements])
-
-    for PPI in PPIs:
-        proteinA, proteinB, PubmedID_count, PubmedID, experiment_count = PPI
-
-        # remove hubs
-        if (proteinA in hubs) or (proteinB in hubs):
-            continue
-        else:
-            out_line = [proteinA,
-                        proteinB,
-                        PubmedID_count,
-                        PubmedID,
-                        experiment_count]
-            PPIs_noHubs.append(out_line)
-
-    return PPIs_noHubs
-
-
 def save_interactome(PPIs):
     """
     Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
@@ -179,16 +118,13 @@ def save_interactome(PPIs):
 def main(interactions_parsed_files, uniprot_file):
 
     logger.info("Parsing Uniprot file")
-    ENSG2Gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
+    ENSG2gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
 
     logger.info("Parsing interaction files")
     PPIs = parse_interactions(interactions_parsed_files, Uniprot2ENSG)
 
-    logger.info("Removing protein hubs")
-    PPIs_noHubs = remove_hubs(PPIs)
-
     logger.info("Printing interactome")
-    save_interactome(PPIs_noHubs)
+    save_interactome(PPIs)
 
     logger.info("Done!")
 
@@ -207,7 +143,7 @@ if __name__ == "__main__":
         description="""
         Parses the output file(s) produced by interaction_parser.py
         and uniprot_parsed.tsv produced by uniprot_parser.py
-        to produce a low-confidence interactome (ie, no hubs and no self-loops)
+        to produce an interactome (with no self-loops)
         in SIF format:
         - ENSG of Protein A
         - "pp" for "protein-protein interaction"

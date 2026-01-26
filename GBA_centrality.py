@@ -46,26 +46,26 @@ class Network(ctypes.Structure):
                 ('edges', ctypes.POINTER(Edge))]
 
 
-class GeneScores(ctypes.Structure):
-    _fields_ = [('nbGenes', ctypes.c_size_t),
+class nodeScores(ctypes.Structure):
+    _fields_ = [('nbSeeds', ctypes.c_size_t),
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
 
-def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, threads):
+def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
     '''
-    Calculate scores for every gene in the interactome based on the proximity to known causal genes.
+    Calculate scores for every node in the network based on the proximity to the seeds.
 
     arguments:
-    - interactome: list of "edges", an edge is a tuple (source, dest, weight) where
+    - nodes: list of "edges", an edge is a tuple (source, dest, weight) where
       source and dest are ints, and weight is a float
-    - ENSG2idx: type=dict, key=ENSG, value=unique identifier for the ENSG, these are
+    - node2idx: type=dict, key=node, value=unique identifier for the node, these are
       consecutive ints starting at 0
-    - causal_genes: list of floats of length num_genes, value=1 if gene is causal and 0 otherwise
+    - seeds: list of floats of length num_nodes, value=1 if node in seeds and 0 otherwise
     - alpha: attenuation coefficient (parameter set by user)
     - threads: number of threads to use, 0 to use all available cores
 
     returns:
-    - scores: list of floats of length num_genes, value=score in the same order as causal_genes
+    - scores: list of floats of length num_nodes, value=score in the same order as seeds
     '''
     if threads:
         os.environ['OMP_NUM_THREADS'] = str(threads)
@@ -74,17 +74,17 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, thr
     # declare function signature
     gbaLibrary.gbaCentrality.argtypes = [
         ctypes.POINTER(Network),
-        ctypes.POINTER(GeneScores),
+        ctypes.POINTER(nodeScores),
         ctypes.c_float,
-        ctypes.POINTER(GeneScores)
+        ctypes.POINTER(nodeScores)
     ]
     gbaLibrary.gbaCentrality.restype = None
 
     # generate ctypes edges
-    edgesType = Edge * len(interactome)
+    edgesType = Edge * len(network)
     edges = edgesType()
     edgeIndex = 0
-    for interaction in interactome:
+    for interaction in network:
         (source, dest, weight) = interaction
         e = Edge(ctypes.c_uint(source),
                  ctypes.c_uint(dest),
@@ -93,53 +93,53 @@ def calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, thr
         edgeIndex += 1
 
     # generate ctypes network
-    N = Network(ctypes.c_ulong(len(ENSG2idx)),
-                ctypes.c_ulong(len(interactome)),
+    N = Network(ctypes.c_ulong(len(node2idx)),
+                ctypes.c_ulong(len(network)),
                 edges)
 
-    # generate ctypes causal genes and scores
-    causalGenesType = SCORETYPE * len(ENSG2idx)
-    causalData = causalGenesType()
-    scoresData = causalGenesType()
+    # generate ctypes seeds and scores
+    seedsType = SCORETYPE * len(node2idx)
+    seedsData = seedsType()
+    scoresData = seedsType()
 
-    # fill causalData
-    causalIndex = 0
-    for geneIsCausal in causal_genes:
-        causalData[causalIndex] = SCORETYPE(geneIsCausal)
-        causalIndex += 1
+    # fill seedsData
+    seedIndex = 0
+    for nodeIsSeed in seeds:
+        seedsData[seedIndex] = SCORETYPE(nodeIsSeed)
+        seedIndex += 1
 
-    causal = GeneScores(ctypes.c_size_t(len(ENSG2idx)),
-                        causalData)
-    scores = GeneScores(ctypes.c_size_t(len(ENSG2idx)),
+    seeds_vector = nodeScores(ctypes.c_size_t(len(node2idx)),
+                        seedsData)
+    scores = nodeScores(ctypes.c_size_t(len(node2idx)),
                         scoresData)
 
     gbaLibrary.gbaCentrality(
         ctypes.byref(N),
-        ctypes.byref(causal),
+        ctypes.byref(seeds_vector),
         ctypes.c_float(alpha),
         ctypes.byref(scores)
     )
 
-    scoresList = [scores.scores[i] for i in range(scores.nbGenes)]
+    scoresList = [scores.scores[i] for i in range(scores.nbSeeds)]
     return(scoresList)
 
 
-def main(interactome_file, causal_genes_file, uniprot_file, alpha, weighted, directed, pathToCode, threads):
+def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, threads):
 
-    logger.info("Parsing interactome")
-    (interactome, ENSG2idx, idx2ENSG) = data_parser.parse_interactome(interactome_file, weighted, directed)
+    logger.info("Parsing network")
+    (network, node2idx) = data_parser.parse_network(network_file, weighted, directed)
 
-    logger.info("Parsing gene-to-ENSG mapping")
-    (ENSG2gene, gene2ENSG, uniprot2ENSG) = data_parser.parse_uniprot(uniprot_file)
+    # logger.info("Parsing gene-to-ENSG mapping")
+    # (ENSG2gene, gene2ENSG, uniprot2ENSG) = data_parser.parse_uniprot(uniprot_file)
 
-    logger.info("Parsing causal genes")
-    causal_genes = data_parser.parse_causal_genes(causal_genes_file, gene2ENSG, ENSG2idx)
+    logger.info("Parsing seeds")
+    seeds = data_parser.parse_seeds(seeds_file, node2idx)
 
     logger.info("Calculating scores")
-    scores = calculate_scores(interactome, ENSG2idx, causal_genes, alpha, pathToCode, threads)
+    scores = calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads)
 
     logger.info("Printing scores")
-    data_parser.scores_to_TSV(scores, ENSG2gene, ENSG2idx)
+    data_parser.scores_to_TSV(scores, node2idx)
 
     logger.info("Done!")
 
@@ -156,26 +156,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality is a network propagation algorithm for disease gene prioritization.
-        The method assigns scores to genes that represent their likelihood of being causal for
-        the phenotype/disease of interest. It takes into account the topology of the protein-protein
-        interaction network (interactome) and prior knowledge about genes known to be associated with the disease.
+        GBA centrality is a new network propagation algorithm
+        based on non-backtracking walks and in-degree normalization.
+        The method assigns scores to nodes in the network that represent
+        their likelihood of being in proximity to a given list of nodes of interest.
         """
     )
 
-    parser.add_argument('--interactome',
-                        help='''filename (with path) of interactome in SIF format
-                                (3 tab-separated columns: ENSG1 weight/interaction_type ENSG2), type=str
+    parser.add_argument('--network',
+                        help='''filename (with path) of network in SIF format
+                                (3 tab-separated columns: node1 weight/interaction_type node2), type=str
                                 NOTE: second column is either weights (floats in [0, 1])
                                 or one interaction type (eg "pp"); if weighted, use parameter --weighted''',
                         type=pathlib.Path,
                         required=True)
-    parser.add_argument('--causal',
-                        help='TXT file (without a header) with 1 column: gene_name',
-                        type=pathlib.Path,
-                        required=True)
-    parser.add_argument('--uniprot',
-                        help='parsed Uniprot file from Interactome/uniprot_parser.py',
+    parser.add_argument('--seeds',
+                        help='TXT file (without a header) with 1 seed per line',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--alpha',
@@ -196,7 +192,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        main(args.interactome, args.causal, args.uniprot, args.alpha, args.weighted,
+        main(args.network, args.seeds, args.alpha, args.weighted,
              args.directed, pathToCode, args.threads)
 
     except Exception as e:

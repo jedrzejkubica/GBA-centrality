@@ -37,11 +37,10 @@ If needed, GBA centrality allows the user to set the attenuation coefficient `--
 Example usage:
 ```
 python GBA_centrality.py \
-  --network ~/GBA-input/network.sif \
-  --seeds ~/GBA-input/seeds.txt \
-  --alpha 0.5 \
-  1> ~/GBA-output/scores.tsv \
-  2> ~/GBA-output/log.txt
+  --network network.sif \
+  --seeds seeds.txt \
+  1> scores.tsv \
+  2> log.txt
 ```
 
 ## Examples
@@ -74,6 +73,9 @@ python GBA_centrality.py \
 
 ### Human interactome
 
-The scripts used to build a human interactome and seeds file with causal genes/proteins can be found here: [Interactome/](Interactome/). For detailed instructions see here [Interactome/README.md](Interactome/README.md).
+The scripts to build a human interactome and seeds file with causal genes can be found here: [Interactome/](Interactome/). For detailed instructions see here [Interactome/README.md](Interactome/README.md).
 
-All code to perform the analyses and generate the figures are also available on GitHub: [GBA-centrality-validation](https://github.com/jedrzejkubica/GBA-centrality-validation).
+
+#### Validation of GBA centrality
+
+A manuscript describing GBA centrality has been submitted. All code to perform the analyses and generate the figures presented in this manuscript are available on GitHub: [GBA-centrality-validation](https://github.com/jedrzejkubica/GBA-centrality-validation).

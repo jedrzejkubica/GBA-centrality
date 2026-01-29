@@ -52,9 +52,11 @@ This example uses a simple "diamond" network with 4 nodes and 4 weighted edges: 
 Example usage:
 ```
 python GBA_centrality.py \
-  --network Example/network_weighted.sif \
-  --seeds Example/seeds.txt \
+  --network Examples/network_weighted.sif \
+  --seeds Examples/seeds.txt \
   --weighted
+  1> scores.tsv \
+  2> log.txt
 ```
 
 
@@ -65,9 +67,11 @@ This example uses a simple network with 3 nodes and 2 directed edges: C -> A -> 
 Example usage:
 ```
 python GBA_centrality.py \
-  --network Example/network_directed.sif \
-  --seeds Example/seeds.txt \
+  --network Examples/network_directed.sif \
+  --seeds Examples/seeds.txt \
   --directed
+  1> scores.tsv \
+  2> log.txt
 ```
 
 

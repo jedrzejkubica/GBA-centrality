@@ -129,17 +129,16 @@ def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, thread
     logger.info("Parsing network")
     (network, node2idx) = data_parser.parse_network(network_file, weighted, directed)
 
-    # logger.info("Parsing gene-to-ENSG mapping")
-    # (ENSG2gene, gene2ENSG, uniprot2ENSG) = data_parser.parse_uniprot(uniprot_file)
-
     logger.info("Parsing seeds")
     seeds = data_parser.parse_seeds(seeds_file, node2idx)
+    if len(seeds) > 0:
+        logger.info("Calculating scores")
+        scores = calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads)
 
-    logger.info("Calculating scores")
-    scores = calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads)
-
-    logger.info("Printing scores")
-    data_parser.scores_to_TSV(scores, node2idx)
+        logger.info("Printing scores")
+        data_parser.scores_to_TSV(scores, node2idx)
+    else:
+        logger.info("No seeds, nothing to do")
 
     logger.info("Done!")
 
@@ -164,10 +163,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('--network',
-                        help='''filename (with path) of network in SIF format
+                        help='''filename (with path) of network in a SIF-like format
                                 (3 tab-separated columns: node1 weight/interaction_type node2), type=str
-                                NOTE: second column is either weights (floats in [0, 1])
-                                or one interaction type (eg "pp"); if weighted, use parameter --weighted''',
+                                NOTE: second column is either weights (floats in ]0, 1])
+                                or a single interaction type (eg "pp"); if weighted, use parameter --weighted''',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--seeds',

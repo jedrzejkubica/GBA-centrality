@@ -111,7 +111,7 @@ def parse_network(network_file, weighted, directed):
             # else network is directed, never create reverse edges
 
     f.close()
-    logger.info("built non-redundant network with %i edges between %i nodes",
+    logger.info("Built non-redundant network with %i edges between %i nodes",
                 num_edges, num_nodes)
     # sanity
     if (len(node2idx) != num_nodes):
@@ -152,7 +152,7 @@ def parse_seeds(seeds_file, node2idx):
 
     f_seeds.close()
 
-    logger.info("found %i seeds", num_found_seeds)
+    logger.info("Found %i seed(s)", num_found_seeds)
 
     return(seeds)
 

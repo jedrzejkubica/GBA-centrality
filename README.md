@@ -2,29 +2,41 @@
 
 # Guilt-by-association centrality
 
-GBA centrality is a new network propagation algorithm based on non-backtracking walks and in-degree normalization. The method assigns scores to nodes in the network that represent their likelihood of being in proximity to a given list of nodes of interest.
+GBA centrality is a new network propagation algorithm based on non-backtracking walks and in-degree normalization. The method assigns scores to nodes in the network that represent their proximity to a given list of nodes of interest (i.e. seeds).
 
-## How to use GBA centrality
+## Install GBA centrality
 
-We assume here that this repository is cloned into `~/Software/`, input data is in `~/GBA-input/`, and results will be produced in `~/GBA-output/`. Change these names to your taste and adapt all commands below accordingly. This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C), because `GBA_centrality.py` uses a GBA-centrality-C shared object (.so file) for heavy-lifting calculations. Create these folders and set up GBA-centrality-C with the following commands:
+This repository requires [GBA-centrality-C](https://github.com/jedrzejkubica/GBA-centrality-C), because `GBA_centrality.py` uses a GBA-centrality-C shared object (.so file) for heavy-lifting calculations. Set up GBA-centrality-C with the following commands:
 
 ```
-mkdir ~/Software/ ~/GBA-input/ ~/GBA-output/
-
-cd ~/Software/
 git clone https://github.com/jedrzejkubica/GBA-centrality.git
 cd GBA-centrality
 git submodule init
 git submodule update
 cd GBA-centrality-C
 make
+cd ..
 ```
 
-As input, GBA centrality takes a network SIF file (for details about the SIF format see: https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format) and a file with nodes of interest (i.e. seeds). GBA centrality allows the user to set the attenuation coefficient `--alpha`  (0 < alpha < 1 ; default = 0.5).
+
+## Use GBA centrality
+
+As input, GBA centrality takes:
+
+- network: a text file with one interaction per line, in the following format: source weight/interaction_type destination (3 tab-separated columns). It is a format similar to SIF but allows for weighted networks (for details about the SIF format see: https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format)
+- seeds: a text file with one seed per line
+
+GBA centrality can also use a directed and/or weighted network: for a weighted network put weights (0 < weight <= 1) in the second column of the network file and use `--weighted` parameter; for a directed network use `--directed` parameter. Then run GBA centrality as follows:
+
+```
+python GBA_centrality.py --weighted --directed [...]
+```
+
+If needed, GBA centrality allows the user to set the attenuation coefficient `--alpha`  (0 < alpha < 1), although the default = 0.5 should be fine for most use cases.
 
 Example usage:
 ```
-python ~/Software/GBA-centrality/GBA_centrality.py \
+python GBA_centrality.py \
   --network ~/GBA-input/network.sif \
   --seeds ~/GBA-input/seeds.txt \
   --alpha 0.5 \
@@ -32,15 +44,36 @@ python ~/Software/GBA-centrality/GBA_centrality.py \
   2> ~/GBA-output/log.txt
 ```
 
-GBA centrality can also use a directed and/or weighted network: for a weighted network put weights (0 < weight < 1) in the second column of the SIF file and use `--weighted` parameter; for a directed network use `--directed` parameter. Then run GBA centrality as follows:
+## Examples
 
+### Weighted network
+
+This example uses a simple "diamond" network with 4 nodes and 4 weighted edges: A, B, C, D. Here A is the seed.
+
+Example usage:
 ```
-python ~/Software/GBA-centrality/GBA_centrality.py --weighted --directed [...]
+python GBA_centrality.py \
+  --network Example/network_weighted.sif \
+  --seeds Example/seeds.txt \
+  --weighted
 ```
 
 
-## Validation of GBA centrality
+### Directed network
 
-The scripts used to build a human interactome and causal genes as seeds can be found here: [Interactome/](Interactome/). The instructions how  can be found here [Interactome/README.md](Interactome/README.md).
+This example uses a simple network with 3 nodes and 2 directed edges: C -> A -> B. Here A is the seed.
+
+Example usage:
+```
+python GBA_centrality.py \
+  --network Example/network_directed.sif \
+  --seeds Example/seeds.txt \
+  --directed
+```
+
+
+### Human interactome
+
+The scripts used to build a human interactome and seeds file with causal genes/proteins can be found here: [Interactome/](Interactome/). For detailed instructions see here [Interactome/README.md](Interactome/README.md).
 
 All code to perform the analyses and generate the figures are also available on GitHub: [GBA-centrality-validation](https://github.com/jedrzejkubica/GBA-centrality-validation).

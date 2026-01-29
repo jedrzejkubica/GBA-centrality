@@ -5,14 +5,11 @@ import sys
 import argparse
 import logging
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-import data_parser
-
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
 
 
-def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
+def parse_interactions(interactions_parsed_files):
     """
     Parse the TSV files from interaction_parser.py with columns:
     - Protein A Uniprot Primary Accession
@@ -79,33 +76,32 @@ def parse_interactions(interactions_parsed_files, Uniprot2ENSG):
         if any(exp != "MI:0004" for exp in PPI2detectionMethod[interactors]):
             (proteinA, proteinB) = interactors.split('_')
 
-            if (proteinA in Uniprot2ENSG) and (proteinB in Uniprot2ENSG):
-                # remove self-loops
-                if proteinA == proteinB:
-                    continue
-                else:
-                    PubmedID = ', '.join(PPI2PubmedID[interactors])
-                    PubmedID_count = len(PPI2PubmedID[interactors])
-                    experiment_count = len(PPI2detectionMethod[interactors])
+            # remove self-loops
+            if proteinA == proteinB:
+                continue
+            else:
+                PubmedID = ', '.join(PPI2PubmedID[interactors])
+                PubmedID_count = len(PPI2PubmedID[interactors])
+                experiment_count = len(PPI2detectionMethod[interactors])
 
-                    out_line = [Uniprot2ENSG[proteinA],
-                                Uniprot2ENSG[proteinB],
-                                str(PubmedID_count),
-                                PubmedID,
-                                str(experiment_count)]
-                    PPIs.append(out_line)
+                out_line = [proteinA,
+                            proteinB,
+                            str(PubmedID_count),
+                            PubmedID,
+                            str(experiment_count)]
+                PPIs.append(out_line)
 
-    return PPIs
+    return(PPIs)
 
 
 def save_interactome(PPIs):
     """
-    Parse PPIs from parse_interactions() and output from data_parser.parse_uniprot().
+    Parse PPIs and saves one interaction per line in TSV file.
 
     Print interactome to STDOUT in SIF format:
-    - ENSG of protein A
+    - protein A
     - "pp" for "protein-protein interaction"
-    - ENSG of protein B
+    - protein B
     """
     for PPI in PPIs:
         proteinA = PPI[0]
@@ -115,13 +111,10 @@ def save_interactome(PPIs):
         print('\t'.join(out_line))
 
 
-def main(interactions_parsed_files, uniprot_file):
-
-    logger.info("Parsing Uniprot file")
-    ENSG2gene, gene2ENSG, Uniprot2ENSG = data_parser.parse_uniprot(uniprot_file)
+def main(interactions_parsed_files):
 
     logger.info("Parsing interaction files")
-    PPIs = parse_interactions(interactions_parsed_files, Uniprot2ENSG)
+    PPIs = parse_interactions(interactions_parsed_files)
 
     logger.info("Printing interactome")
     save_interactome(PPIs)
@@ -145,19 +138,17 @@ if __name__ == "__main__":
         and uniprot_parsed.tsv produced by uniprot_parser.py
         to produce an interactome (with no self-loops)
         in SIF format:
-        - ENSG of Protein A
+        - Protein A
         - "pp" for "protein-protein interaction"
-        - ENSG of Protein B
+        - Protein B
         """)
 
     parser.add_argument('--interactions', nargs='+', required=True)
-    parser.add_argument('--uniprot', required=True)
 
     args = parser.parse_args()
 
     try:
-        main(interactions_parsed_files=args.interactions,
-             uniprot_file=args.uniprot)
+        main(interactions_parsed_files=args.interactions)
 
     except Exception as e:
         # details on the issue should be in the exception name, print to stderr and die

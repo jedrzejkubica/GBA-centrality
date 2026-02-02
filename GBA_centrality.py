@@ -127,7 +127,7 @@ def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
 def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, threads):
 
     logger.info("Parsing network")
-    (network, node2idx) = data_parser.parse_network(network_file, weighted, directed)
+    (network, node2idx, idx2node) = data_parser.parse_network(network_file, weighted, directed)
 
     logger.info("Parsing seeds")
     (seeds, seeds_vector) = data_parser.parse_seeds(seeds_file, node2idx)

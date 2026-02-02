@@ -38,11 +38,13 @@ def parse_network(network_file, weighted, directed):
       source and dest are ints, and weight is a float
     - node2idx: type=dict, key=node, value=unique identifier for the node, these are
       consecutive ints starting at 0
+    - idx2node: type=dict, key=unique identifier for the node, value=node
     '''
     num_nodes = 0
     num_edges = 0
     network = []
     node2idx = {}
+    idx2node = {}
 
     try:
         f = open(network_file, 'r')
@@ -65,9 +67,11 @@ def parse_network(network_file, weighted, directed):
         # assign unique identifiers to nodes
         if node1 not in node2idx:
             node2idx[node1] = num_nodes
+            idx2node[num_nodes] = node1
             num_nodes += 1
         if node2 not in node2idx:
             node2idx[node2] = num_nodes
+            idx2node[num_nodes] = node2
             num_nodes += 1
 
         weight = 1.0
@@ -118,7 +122,7 @@ def parse_network(network_file, weighted, directed):
         logger.error("sanity check failed on num_nodes!")
     if (len(network) != num_edges):
         logger.error("sanity check failed on num_edges!")
-    return(network, node2idx)
+    return(network, node2idx, idx2node)
 
 
 def parse_seeds(seeds_file, node2idx):

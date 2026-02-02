@@ -130,10 +130,10 @@ def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, thread
     (network, node2idx) = data_parser.parse_network(network_file, weighted, directed)
 
     logger.info("Parsing seeds")
-    seeds = data_parser.parse_seeds(seeds_file, node2idx)
+    (seeds, seeds_vector) = data_parser.parse_seeds(seeds_file, node2idx)
     if len(seeds) > 0:
         logger.info("Calculating scores")
-        scores = calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads)
+        scores = calculate_scores(network, node2idx, seeds_vector, alpha, pathToCode, threads)
 
         logger.info("Printing scores")
         data_parser.scores_to_TSV(scores, node2idx)

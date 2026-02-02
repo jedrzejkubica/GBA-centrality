@@ -126,12 +126,14 @@ def parse_seeds(seeds_file, node2idx):
     Build a vector of seeds from seeds_file
 
     arguments:
-    - seeds_file: filename (with path) of seeds, one seed per line
+    - seeds_file: filename (with path), one seed per line
 
     returns:
-    - seeds: list of floats, one per seed, value=1 if node is a seed and 0 otherwise
+    - seeds: list of seed names
+    - seeds_vector: list of floats, one per node in network, value=1 if node in seeds and 0 otherwise
     '''
-    seeds = [0.0] * len(node2idx)
+    seeds = []
+    seeds_vector = [0.0] * len(node2idx)
     num_found_seeds = 0
 
     try:
@@ -144,7 +146,8 @@ def parse_seeds(seeds_file, node2idx):
     for line in f_seeds:
         seed = line.rstrip()
         if seed in node2idx:
-            seeds[node2idx[seed]] = 1.0
+            seeds.append(seed)
+            seeds_vector[node2idx[seed]] = 1.0
             num_found_seeds += 1
         else:
             logger.warning("seed %s is not in the network, skipping it",
@@ -154,7 +157,7 @@ def parse_seeds(seeds_file, node2idx):
 
     logger.info("Found %i seed(s)", num_found_seeds)
 
-    return(seeds)
+    return(seeds, seeds_vector)
 
 
 def scores_to_TSV(scores, node2idx):

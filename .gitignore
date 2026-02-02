@@ -1,9 +1,4 @@
 *pycache*
-.backup/
-Interactome/*.tsv
-Interactome/*.sif
-Validation/figures/*
-output/
 
 # ignore submodules
 GBA-centrality-C/

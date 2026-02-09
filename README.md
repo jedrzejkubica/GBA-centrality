@@ -36,7 +36,7 @@ As input, GBA centrality requires:
 For output, GBA centrality prints to stdout the scores in TSV format `node score` (2 tab-separated columns).
 
 Networks are undirected and unweighted by default, but GBA centrality can also use a directed and/or weighted network:
-- use `--directed` if your network is directed, edges are then seen as node1->node2;
+- use `--directed` if your network is directed, edges are then seen as node1->node2 (i.e. the source is in the first column and the destination in the third column);
 - use `--weighted` if your network is weighted, the second column of the network file must then contain the weight of each interaction (0 < weight <= 1).
 
 If needed, GBA centrality allows the user to set the attenuation coefficient `--alpha`  (0 < alpha < 1), although the default = 0.5 should be fine for most use cases.

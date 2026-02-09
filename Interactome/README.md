@@ -96,7 +96,7 @@ The interactome file has 3 tab-separated columns: protein1 "pp" protein2.
 Create a file `causal_genes.txt` (without a header) with one known causal gene name per line.
 
 > [!NOTE]
-> GBA centrality maps causal gene names to ENSGs using the parsed Uniprot file: As gene names, it requires the HGNC nomenclature (HUGO Gene Nomenclature Committee, https://www.genenames.org).
+>  `causal_genes_parser.py` maps causal gene names to UniProt ACs using the parsed Uniprot file. It requires [HUGO Gene Nomenclature Committee](https://www.genenames.org) gene names.
 
 
 Convert gene names in `causal_genes.txt` into protein IDs (Primary ACs).

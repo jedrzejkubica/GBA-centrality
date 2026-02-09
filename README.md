@@ -74,7 +74,7 @@ python GBA_centrality.py \
 
 ### Human interactome
 
-We provide additional instructions for interactome-based disease gene prioritization. The scripts to build a human interactome and prepare a seeds file with known causal genes can be found here: [Interactome/](Interactome/). For more details see [Interactome/README.md](Interactome/README.md).
+We provide additional instructions for interactome-based disease gene prioritization. The instructions and scripts to build a human interactome and prepare a seeds file with known causal genes can be found in the [Interactome/](Interactome/) subdirectory.
 
 
 ## Validation of GBA centrality

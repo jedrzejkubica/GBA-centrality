@@ -28,14 +28,16 @@ For details see:
 python GBA_centrality.py --help
 ```
 
-As input, GBA centrality takes:
+As input, GBA centrality requires:
 
-- `--network`: a text file with one interaction per line, in the following format: source weight/interaction_type destination (3 tab-separated columns). It is a format similar to SIF but allows for weighted networks (for details about the SIF format see: https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format)
+- `--network`: a text file with one interaction per line, in the following format: `node1 weight/interaction_type node2` (3 tab-separated columns). It is a format similar to SIF but allows for weighted networks ([SIF format documentation](https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format))
 - `--seeds`: a text file with one seed per line
 
-For output, GBA centrality prints to stdout the scores in the text format.
+For output, GBA centrality prints to stdout the scores in TSV format `node score` (2 tab-separated columns).
 
-GBA centrality can also use a directed and/or weighted network: for a weighted network put weights (0 < weight <= 1) in the second column of the network file and use `--weighted` parameter; for a directed network use `--directed` parameter.
+Networks are undirected and unweighted by default, but GBA centrality can also use a directed and/or weighted network:
+- use `--directed` if your network is directed, edges are then seen as node1->node2;
+- use `--weighted` if your network is weighted, the second column of the network file must then contain the weight of each interaction (0 < weight <= 1).
 
 If needed, GBA centrality allows the user to set the attenuation coefficient `--alpha`  (0 < alpha < 1), although the default = 0.5 should be fine for most use cases.
 
@@ -50,7 +52,7 @@ This example uses a simple "diamond" network with 4 nodes and 4 weighted edges: 
 python GBA_centrality.py \
   --network Examples/network_weighted.sif \
   --seeds Examples/seeds.txt \
-  --weighted
+  --weighted \
   1> scores.tsv \
   2> log.txt
 ```
@@ -64,7 +66,7 @@ This example uses a simple network with 3 nodes and 2 directed edges: C -> A -> 
 python GBA_centrality.py \
   --network Examples/network_directed.sif \
   --seeds Examples/seeds.txt \
-  --directed
+  --directed \
   1> scores.tsv \
   2> log.txt
 ```

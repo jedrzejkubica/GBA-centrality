@@ -158,7 +158,7 @@ if __name__ == "__main__":
         GBA centrality is a new network propagation algorithm
         based on non-backtracking walks and in-degree normalization.
         The method assigns scores to nodes in the network that represent
-        their likelihood of being in proximity to a given list of nodes of interest.
+        their proximity to a given list of nodes of interest.
         """
     )
 

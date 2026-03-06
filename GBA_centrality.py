@@ -155,18 +155,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality is a new network propagation algorithm
+        GBA centrality is a network propagation algorithm
         based on non-backtracking walks and in-degree normalization.
-        The method assigns scores to nodes in the network that represent
-        their proximity to a given list of nodes of interest.
+        It assigns scores to nodes in the network that represent
+        their proximity to a given list of nodes of interest (seeds).
         """
     )
 
     parser.add_argument('--network',
-                        help='''filename (with path) of network in a SIF-like format
-                                (3 tab-separated columns: node1 weight/interaction_type node2), type=str
-                                NOTE: second column is either weights (floats in ]0, 1])
-                                or a single interaction type (eg "pp"); if weighted, use parameter --weighted''',
+                        help=f'''filename (with path) with network in a SIF-like format
+                                (3 tab-separated columns: node1 weight/interaction_type node2);
+                                NOTE: second column can be weights (floats in ]0, 1])
+                                or a single interaction type (eg "pp");
+                                if weighted, use parameter --weighted; if directed, use parameter --directed''',
                         type=pathlib.Path,
                         required=True)
     parser.add_argument('--seeds',
@@ -178,10 +179,10 @@ if __name__ == "__main__":
                         default=0.5,
                         type=float)
     parser.add_argument('--weighted',
-                        help='use if graph is weighted',
-                        action='store_true')  # if present, set the value to True; otherwise False
+                        help='use if network is weighted',
+                        action='store_true')  # if paramter is used, the value is True; otherwise False
     parser.add_argument('--directed',
-                        help='use if graph is directed',
+                        help='use if network is directed',
                         action='store_true')
     parser.add_argument('--threads',
                         help='number of parallel threads to run, default=0 to use all available cores',

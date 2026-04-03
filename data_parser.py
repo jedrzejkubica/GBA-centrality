@@ -16,6 +16,7 @@
 # If not, see <https://www.gnu.org/licenses/>.
 ############################################################################################
 
+import os
 import logging
 
 # set up logger, using inherited config, in case we get called as a module
@@ -164,18 +165,19 @@ def parse_seeds(seeds_file, node2idx):
     return(seeds, seeds_vector)
 
 
-def scores_to_TSV(scores, node2idx):
+def scores_to_TSV(scores, node2idx, out_dir):
     '''
     Print scores to stdout in TSV format, 2 columns: node score
 
     arguments:
     - scores: list of scores, one per node
     - node2idx: type=dict, key=node, value=index in scores
+    - out_dir: directory where to write the scores.tsv file
     '''
+    with open(os.path.join(out_dir, "scores.tsv"), "w") as f:
+        # header
+        print("NODE\tSCORE", file=f)
 
-    # header
-    print("NODE\tSCORE")
-
-    for node in node2idx.keys():
-        score = scores[node2idx[node]]
-        print(node + "\t" + "{:.5f}".format(score))
+        for node in node2idx.keys():
+            score = scores[node2idx[node]]
+            print(node + "\t" + "{:.5f}".format(score), file=f)

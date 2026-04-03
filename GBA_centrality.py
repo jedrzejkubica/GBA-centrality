@@ -124,7 +124,7 @@ def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
     return(scoresList)
 
 
-def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, threads):
+def main(network_file, seeds_file, out_dir, alpha, weighted, directed, pathToCode, threads):
 
     logger.info("Parsing network")
     (network, node2idx, idx2node) = data_parser.parse_network(network_file, weighted, directed)
@@ -135,8 +135,8 @@ def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, thread
         logger.info("Calculating scores")
         scores = calculate_scores(network, node2idx, seeds_vector, alpha, pathToCode, threads)
 
-        logger.info("Printing scores")
-        data_parser.scores_to_TSV(scores, node2idx)
+        logger.info(f"Saving scores to {out_dir}")
+        data_parser.scores_to_TSV(scores, node2idx, out_dir)
     else:
         logger.info("No seeds, nothing to do")
 
@@ -145,12 +145,6 @@ def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, thread
 
 if __name__ == "__main__":
     (pathToCode, script_name) = os.path.split(os.path.realpath(sys.argv[0]))
-    # configure logging, sub-modules will inherit this config
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s: %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=logging.DEBUG)
-    # set up logger: we want script name rather than 'root'
-    logger = logging.getLogger(script_name)
 
     parser = argparse.ArgumentParser(
         prog=script_name,
@@ -174,6 +168,10 @@ if __name__ == "__main__":
                         help='TXT file (without a header) with 1 seed per line',
                         type=pathlib.Path,
                         required=True)
+    parser.add_argument('--out',
+                        help='directory where to write the scores.tsv file',
+                        type=pathlib.Path,
+                        required=True)
     parser.add_argument('--alpha',
                         help='attenuation coefficient (0 < alpha < 1)',
                         default=0.5,
@@ -188,11 +186,24 @@ if __name__ == "__main__":
                         help='number of parallel threads to run, default=0 to use all available cores',
                         default=0,
                         type=int)
- 
+
     args = parser.parse_args()
 
+    # create output directory if it doesn't exist
+    out_dir = args.out
+    os.makedirs(out_dir, exist_ok=True)
+
+    # configure logging, sub-modules will inherit this config
+    log_path = os.path.join(out_dir, "log.txt")
+    logging.basicConfig(filename=log_path,
+                        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S',
+                        level=logging.DEBUG)
+    # set up logger: we want script name rather than 'root'
+    logger = logging.getLogger(script_name)
+
     try:
-        main(args.network, args.seeds, args.alpha, args.weighted,
+        main(args.network, args.seeds, out_dir, args.alpha, args.weighted,
              args.directed, pathToCode, args.threads)
 
     except Exception as e:

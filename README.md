@@ -53,8 +53,7 @@ python GBA_centrality.py \
   --network Examples/network_weighted.sif \
   --seeds Examples/seeds.txt \
   --weighted \
-  1> scores.tsv \
-  2> log.txt
+  --out out_dir/
 ```
 
 
@@ -67,8 +66,7 @@ python GBA_centrality.py \
   --network Examples/network_directed.sif \
   --seeds Examples/seeds.txt \
   --directed \
-  1> scores.tsv \
-  2> log.txt
+  --out out_dir/
 ```
 
 

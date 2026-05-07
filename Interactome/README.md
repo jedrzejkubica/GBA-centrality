@@ -2,7 +2,7 @@
 
 ## Build a human interactome
 
-Below we provide instructions for interactome-based disease gene prioritization.
+Below we provide instructions for interactome-based disease gene prioritization. We provide scripts and commands to: download and parse protein-protein interaction data, build a human interactome, and create a file with seeds (i.e. disease-associated genes/proteins).
 
 We assume that the `GBA-centrality/` repository is in `~/Software/`, and that data will be downloaded into `~/GBA-input`. If needed, adapt the commands below to your taste.
 
@@ -25,7 +25,7 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
-Construct a human interactome (undirected and unweighted) using protein-protein interaction (PPI) data from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data).
+Build a human interactome (undirected and unweighted) using protein-protein interaction (PPI) data from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data).
 
 **Step 1. Download and extract human PPI data**
 
@@ -93,13 +93,12 @@ The interactome file has 3 tab-separated columns: protein1 "pp" protein2.
 
 ### Seeds file
 
-Create a file `causal_genes.txt` (without a header) with one known causal gene name per line.
+Seeds must correspond to nodes in the interactome. Because the interactome contains protein IDs, causal genes provided as seeds must be mapped to protein IDs beforehand. We provide the script `causal_genes_parser.py`, which maps causal gene names to UniProt accession numbers (UniProt Primary ACs) using the parsed Uniprot file.
 
 > [!NOTE]
->  `causal_genes_parser.py` maps causal gene names to UniProt ACs using the parsed Uniprot file. It requires [HUGO Gene Nomenclature Committee](https://www.genenames.org) gene names.
+> It requires [HUGO Gene Nomenclature Committee](https://www.genenames.org) gene names.
 
-
-Convert gene names in `causal_genes.txt` into protein IDs (Primary ACs).
+Create a file `causal_genes.txt` (without a header) with one causal gene name per line. Then map gene names in `causal_genes.txt` into protein IDs and save them in `causal_proteins.txt`.
 
 ```
 python ~/Software/GBA-centrality/Interactome/causal_genes_parser.py \

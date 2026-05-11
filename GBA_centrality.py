@@ -51,7 +51,7 @@ class nodeScores(ctypes.Structure):
                 ('scores', ctypes.POINTER(SCORETYPE))]
 
 
-def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
+def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, threads):
     '''
     Calculate scores for every node in the network based on the proximity to the seeds.
 
@@ -62,6 +62,10 @@ def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
       consecutive ints starting at 0
     - seeds: list of floats of length num_nodes, value=1 if node in seeds and 0 otherwise
     - alpha: attenuation coefficient (parameter set by user)
+    - cacheFile: None (don't build or use a cache), or ASCII string holding a filename (with
+      path) to use as cache for gbaCentrality(), cachefile will be created on the first
+      run and used in any subsequent runs. The cache can be reused as long as the network
+      and alpha remain the same, if you change the network you must use a different cacheFile.
     - threads: number of threads to use, 0 to use all available cores
 
     returns:
@@ -76,9 +80,18 @@ def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
         ctypes.POINTER(Network),
         ctypes.POINTER(nodeScores),
         ctypes.c_float,
-        ctypes.POINTER(nodeScores)
+        ctypes.POINTER(nodeScores),
+        ctypes.c_char_p
     ]
     gbaLibrary.gbaCentrality.restype = None
+
+    # cacheFile as C char*, NULL if not requested
+    cacheFileC = None
+    if cacheFile.isacii():
+        cacheFileC = ctypes.c_char_p(cacheFile.encode('utf-8'))
+    elif cacheFile:
+        logger.error("cacheFile must be an ASCII string, called with %s", cacheFile)
+        raise Exception("called with non-ASCII cacheFile")
 
     # generate ctypes edges
     edgesType = Edge * len(network)
@@ -117,14 +130,15 @@ def calculate_scores(network, node2idx, seeds, alpha, pathToCode, threads):
         ctypes.byref(N),
         ctypes.byref(seeds_vector),
         ctypes.c_float(alpha),
-        ctypes.byref(scores)
+        ctypes.byref(scores),
+        cacheFileC
     )
 
     scoresList = [scores.scores[i] for i in range(scores.nbSeeds)]
     return(scoresList)
 
 
-def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, threads):
+def main(network_file, seeds_file, alpha, weighted, directed, cacheFile, pathToCode, threads):
 
     logger.info("Parsing network")
     (network, node2idx, idx2node) = data_parser.parse_network(network_file, weighted, directed)
@@ -133,7 +147,7 @@ def main(network_file, seeds_file, alpha, weighted, directed, pathToCode, thread
     (seeds, seeds_vector) = data_parser.parse_seeds(seeds_file, node2idx)
     if len(seeds) > 0:
         logger.info("Calculating scores")
-        scores = calculate_scores(network, node2idx, seeds_vector, alpha, pathToCode, threads)
+        scores = calculate_scores(network, node2idx, seeds_vector, alpha, cacheFile, pathToCode, threads)
 
         logger.info(f"Printing scores")
         data_parser.scores_to_TSV(scores, node2idx)
@@ -184,6 +198,10 @@ if __name__ == "__main__":
     parser.add_argument('--directed',
                         help='use if network is directed',
                         action='store_true')
+    parser.add_argument('--cacheFile',
+                        help='cache file to build (on first run) and use (on subsequent runs)',
+                        type=pathlib.Path,
+                        default=None)
     parser.add_argument('--threads',
                         help='number of parallel threads to run, default=0 to use all available cores',
                         default=0,
@@ -193,7 +211,7 @@ if __name__ == "__main__":
 
     try:
         main(args.network, args.seeds, args.alpha, args.weighted,
-             args.directed, pathToCode, args.threads)
+             args.directed, args.cacheFile, pathToCode, args.threads)
 
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die

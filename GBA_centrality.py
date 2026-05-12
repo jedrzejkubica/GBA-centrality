@@ -87,11 +87,12 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
 
     # cacheFile as C char*, NULL if not requested
     cacheFileC = None
-    if cacheFile.isacii():
-        cacheFileC = ctypes.c_char_p(cacheFile.encode('utf-8'))
-    elif cacheFile:
-        logger.error("cacheFile must be an ASCII string, called with %s", cacheFile)
-        raise Exception("called with non-ASCII cacheFile")
+    if cacheFile is not None:
+        if cacheFile.isascii():
+            cacheFileC = ctypes.c_char_p(cacheFile.encode('utf-8'))
+        else:
+            logger.error("cacheFile must be an ASCII string, called with %s", cacheFile)
+            raise Exception("called with non-ASCII cacheFile")
 
     # generate ctypes edges
     edgesType = Edge * len(network)

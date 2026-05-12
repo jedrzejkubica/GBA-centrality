@@ -88,6 +88,7 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     # cacheFile as C char*, NULL if not requested
     cacheFileC = None
     if cacheFile is not None:
+        cacheFile = str(cacheFile)  # convert from pathlib.Path to str
         if cacheFile.isascii():
             cacheFileC = ctypes.c_char_p(cacheFile.encode('utf-8'))
         else:

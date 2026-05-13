@@ -29,11 +29,11 @@ Build a human interactome (undirected and unweighted) using protein-protein inte
 
 **Step 1. Download and extract human PPI data**
 
-BioGRID (file size ~170Mb)
+BioGRID Multi-Validated (MV) Datasets (file size ~35Mb)
 
 ```
-wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-ORGANISM-LATEST.mitab.zip
-unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt
+wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-MV-Physical-LATEST.mitab.zip
+unzip BIOGRID-MV-Physical-LATEST.mitab.zip
 ```
 
 IntAct (file size ~800Mb)
@@ -55,7 +55,7 @@ Parse BioGRID
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt \
+  --interactions ~/GBA-input/BIOGRID-MV-Physical-*.mitab.txt \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
   > ~/GBA-input/interactions_Biogrid.tsv
 ```

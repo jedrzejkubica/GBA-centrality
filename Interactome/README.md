@@ -11,17 +11,17 @@ mkdir ~/GBA-input
 cd ~/GBA-input
 ```
 
+#### Uniprot file
 
-### Uniprot file
+This file will be used for for mapping between gene names, gene ENSGs and protein Uniprot IDs.
 
-This file will be used for mapping between gene names, gene ENSGs and protein Uniprot IDs.
-
-Download and parse Uniprot (file size ~600Mb):
+Download and parse Uniprot (file size ~660Mb):
 
 ```
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
 gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/uniprot_parser.py > uniprot_parsed.tsv
 ```
+
 
 ### Interactome SIF file
 
@@ -36,18 +36,13 @@ wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-MV
 unzip BIOGRID-MV-Physical-LATEST.mitab.zip
 ```
 
-IntAct (file size ~800Mb)
+IntAct (file size ~1.3Gb)
 
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
 unzip intact.zip
 ```
 
-Reactome (file size ~170Mb)
-
-```
-wget https://reactome.org/download/current/interactors/reactome.homo_sapiens.interactions.psi-mitab.txt
-```
 
 **Step 2. Parse PPI data**
 
@@ -57,7 +52,8 @@ Parse BioGRID
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
   --interactions ~/GBA-input/BIOGRID-MV-Physical-*.mitab.txt \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  > ~/GBA-input/interactions_Biogrid.tsv
+  1> ~/GBA-input/interactions_Biogrid-MV.tsv \
+  2> ~/GBA-input/interactions_Biogrid-MV.log
 ```
 
 Parse IntAct
@@ -66,17 +62,10 @@ Parse IntAct
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
   --interactions ~/GBA-input/intact.txt \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  > ~/GBA-input/interactions_Intact.tsv
+  1> ~/GBA-input/interactions_Intact.tsv \
+  2> ~/GBA-input/interactions_Intact.log
 ```
 
-Parse Reactome
-
-```
-python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/reactome.homo_sapiens.interactions.psi-mitab.txt \
-  --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  > ~/GBA-input/interactions_Reactome.tsv
-```
 
 **Step 3. Build a human interactome**
 
@@ -84,9 +73,11 @@ The interactome data will be filtered on "Interaction Detection Method" and "Int
 
 ```
 python ~/Software/GBA-centrality/Interactome/build_interactome.py \
-  --interactions ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv ~/GBA-input/interactions_Reactome.tsv \
+  --interactions ~/GBA-input/interactions_Biogrid-MV.tsv ~/GBA-input/interactions_Intact.tsv \
   > ~/GBA-input/interactome_human.sif
 ```
+
+If needed, `build_interactome.py` allows the user to set the min number of evidences `--n_evidence`  (default=2) and the min number of direct interactions `--n_direct` (default=1).
 
 The interactome file has 3 tab-separated columns: protein1 "pp" protein2.
 
@@ -99,6 +90,7 @@ Seeds must correspond to nodes in the interactome. Because the interactome conta
 > It requires [HUGO Gene Nomenclature Committee](https://www.genenames.org) gene names.
 
 Create a file `causal_genes.txt` (without a header) with one causal gene name per line. Then map gene names in `causal_genes.txt` into protein IDs and save them in `causal_proteins.txt`.
+
 
 ```
 python ~/Software/GBA-centrality/Interactome/causal_genes_parser.py \

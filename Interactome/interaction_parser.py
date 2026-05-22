@@ -28,29 +28,71 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def parse_interaction_file(interaction_file):
+def parse_uniprot_file(uniprot_file):
+    """
+    Parse a TSV file from uniprot_parser.py with columns:
+    - Uniprot Primary AC
+    - Uniprot Secondary AC(s)
+    - tax ID
+    - gene name(s)
+    - ENSG(s)
+
+    Returns:
+    - primary2secondary: dict with key=Uniprot Primary AC,
+        value=list of Uniprot Secondary ACs
+    """
+
+    primary2secondary = {}
+
+    try:
+        f = open(uniprot_file)
+    except Exception as e:
+        logger.error("Opening provided uniprot file %s: %s", uniprot_file, e)
+        raise Exception("cannot open provided uniprot file")
+
+    header = f.readline()
+
+    for line in f:
+        line_split = line.rstrip().split("\t")
+
+        if(len(line_split) != 5):
+            logger.error("Uniprot file %s has bad line (not 5 tab-separated fields): %s",
+                         uniprot_file, line)
+            raise Exception("Bad line in the uniprot file, not 5 tab-separated fields")
+        
+        primaryAC = line_split[0]
+        if line_split[1] == "":
+            secondaryACs = []
+        else:
+            secondaryACs = line_split[1].split(",")
+
+        primary2secondary[primaryAC] = secondaryACs
+
+    f.close()
+
+    return(primary2secondary)
+
+
+def parse_interaction_file(interaction_file, primary2secondary):
     """
     Parse a miTAB 2.5 or 2.7 file.
 
-    For each interaction, find Uniprot IDs of interacting proteins,
+    For each interaction, find Uniprot ACs of interacting proteins,
     interaction detection method, pubmed and interaction type.
-    Ignore lines if any protein and/or pubmed is missing.
+    Ignore lines if any of the above is missing.
     Filter interactions as follows:
     - ignore self-interactions
+    - ignore some "bad" detection methods (search for "bad" below)
     - tax ID must be human (9606)
-    - detection method cannot be MI:0254 (genetic interference), MI:0686 (unspecified method)
-        or MI:0004 (affintity chromatography)
-    - interaction type must be MI:0407 (direct interaction) or MI:0915 (physical association)
+    - interaction type is used to ignore interactions or set evidence type ("1" or "2")
+    sort alphabetically the two interactors (A:B and B:A are the same)
 
     Print to STDOUT in TSV format:
-    - protein A Uniprot ID
-    - protein B Uniprot ID
-    - interaction detection method
+    - protein A Uniprot AC
+    - protein B Uniprot AC
     - pubmed
-    - interaction type
+    - evidence type
     """
-
-    interactions = []
 
     re_uniprot = re.compile(r'^uniprot(kb|/swiss-prot):([A-Z0-9-_]+)$')
     re_psimi = re.compile(r'^psi-mi:"(MI:\d+)"')  # detection method and interaction type
@@ -71,128 +113,133 @@ def parse_interaction_file(interaction_file):
         line_count += 1
         line_split = line.rstrip().split("\t")
 
-        # Uniprot ID of protein A should be in column 0,
+        # Uniprot AC of protein A should be in column 0,
         # otherwise it can be in alternatives (column 2) or in aliases (column 4);
-        # for protein B, Uniprot ID should be in column 1,
+        # for protein B, Uniprot AC should be in column 1,
         # otherwise it can be in alternatives (column 3) or in aliases (column 5)
         protein_A = ""
-        if re_uniprot.match(line_split[0]):
-            protein_A = re_uniprot.match(line_split[0]).group(2)  # second parenthesized group in re_uniprot
-        else:
-            alt_split = line_split[2].split("|")
-            for alt in alt_split:
-                if re_uniprot.match(alt):
-                    protein_A = re_uniprot.match(alt).group(2)
+        potentials = [line_split[0]] + line_split[2].split("|") + line_split[4].split("|")
+        for potential in potentials:
+            if(re_uniprot.match(potential)):
+                protein_A = re_uniprot.match(potential).group(2)  # second parenthesized group in re_uniprot
+                # check if it is a valid primary AC
+                if(protein_A in primary2secondary):
                     break
-            if protein_A == "":
-                alias_split = line_split[4].split("|")
-                for alias in alias_split:
-                    if re_uniprot.match(alias):
-                        protein_A = re_uniprot.match(alias).group(2)
-                        break
-        if protein_A == "":
-            logger.warning(f"Uniprot ID not found at line {line_count}, skipping it")
+                else:
+                    protein_A = ""
+        if(protein_A == ""):
+            logger.warning(f"Uniprot AC not found at line {line_count}, skipping it")
             continue
 
         # interactor B
         protein_B = ""
-        if re_uniprot.match(line_split[1]):
-            protein_B = re_uniprot.match(line_split[1]).group(2)
-        else:
-            alt_split = line_split[3].split("|")
-            for alt in alt_split:
-                if re_uniprot.match(alt):
-                    protein_B = re_uniprot.match(alt).group(2)
+        potentials = [line_split[1]] + line_split[3].split("|") + line_split[5].split("|")
+        for potential in potentials:
+            if(re_uniprot.match(potential)):
+                protein_B = re_uniprot.match(potential).group(2)
+                # check if it is a valid primary AC
+                if(protein_B in primary2secondary):
                     break
-            if protein_B == "":
-                alias_split = line_split[5].split("|")
-                for alias in alias_split:
-                    if re_uniprot.match(alias):
-                        protein_B = re_uniprot.match(alias).group(2)
-                        break
-        if protein_B == "":
-            logger.warning(f"Uniprot ID not found at line {line_count}, skipping it")
+                else:
+                    protein_B = ""
+        if(protein_B == ""):
+            logger.warning(f"Uniprot AC not found at line {line_count}, skipping it")
             continue
         
         # ignore self-interactions
-        if protein_B == protein_A:
+        if(protein_B == protein_A):
             continue
 
-        # interaction detection methods should be in column 6
+        # interaction detection methods should be in column 6;
+        # detection method cannot be "bad": MI:0254 (genetic interference) or
+        # MI:0686 (unspecified method)
         method = ""
         methods_split = line_split[6].split("|")
         for met in methods_split:
-            if re_psimi.match(met):
+            if(re_psimi.match(met)):
                 method = re_psimi.match(met).group(1)
-                break
-        if method == "":
-            logger.warning(f"Detection method for {protein_A}:{protein_B} not found, skipping it")
-            continue
-        if method in ["MI:0254", "MI:0686", "MI:0004"]:
-            logger.warning(f"{protein_A}:{protein_B} detected by {method}, skipping it")
+                if(method in ["MI:0254", "MI:0686"]):
+                    method = ""
+                    continue
+                else:
+                    break
+        if(method == ""):
+            logger.warning(f"Detection method for {protein_A}:{protein_B} not found or bad method, skipping it")
             continue
 
         # pubmed ID should be in column 8
         pubmed = ""
         pub_split = line_split[8].split("|")
         for pub in pub_split:
-            if re_pubmed.match(pub):
+            if(re_pubmed.match(pub)):
                 pubmed = re_pubmed.match(pub).group(1)
                 break
-        if pubmed == "":
+        if(pubmed == ""):
             logger.warning(f"Pubmed ID not found at line {line_count}, skipping it")
             continue
 
         # tax ID for protein A should be in column 9, tax ID for protein B should be in column 10
+        # both proteins should be human ("9606")
         taxID_A = ""
         tax_A_split = line_split[9].split("|")
         for tax in tax_A_split:
-            if (re_taxID.match(tax)):
+            if(re_taxID.match(tax)):
                 taxID_A = re_taxID.match(tax).group(1)
                 break
-        if taxID_A == "":
+        if(taxID_A == ""):
             logger.warning(f"Tax ID not found at line {line_count}, skipping it")
             continue
 
         taxID_B = ""
         tax_B_split = line_split[10].split("|")
         for tax in tax_B_split:
-            if (re_taxID.match(tax)):
+            if((re_taxID.match(tax))):
                 taxID_B = re_taxID.match(tax).group(1)
-        if taxID_B == "":
+        if(taxID_B == ""):
             logger.warning(f"Tax ID not found at line {line_count}, skipping it")
             continue
         
         # ignore non-human interactions
-        if (taxID_A != "9606") or (taxID_B != "9606"):
+        if((taxID_A != "9606") or (taxID_B != "9606")):
             continue
 
-        # interaction type should be in column 11
+        # interaction type should be in column 11;
+        # interaction type cannot be "bad", ie MI:0403 (colocalization),
+        # if interaction type is MI:0407 (direct interaction), evidence_type="1"
+        # otherwise evidence_type="2"
         interaction_type = ""
-        types_split = line_split[11].split("|")
+        evidence_type = ""
+        types_split = line_split[11].split("|")  # 19/05/2026 intact and biogrid only store one type
         for type in types_split:
-            if re_psimi.match(type):
+            if(re_psimi.match(type)):
                 interaction_type = re_psimi.match(type).group(1)
-                break
-        if interaction_type == "":
-            logger.warning(f"Interaction type for {protein_A}:{protein_B} not found, skipping it")
-            continue
-        if interaction_type not in ["MI:0407", "MI:0915"]:
-            # logger.warning(f"{protein_A}:{protein_B} is a {interaction_type}, skipping it")
+                if(interaction_type == "MI:0407"):
+                    evidence_type = "1"
+                    break
+                elif(interaction_type != "MI:0403"):
+                    evidence_type = "2"
+        if(evidence_type == ""):
+            logger.warning(f"Interaction type for {protein_A}:{protein_B} not found or bad type, skipping it")
             continue
 
-        interactions.append((protein_A, protein_B, method, pubmed, interaction_type))
+        # sort alphabetically
+        if(protein_B < protein_A):
+            temp = protein_A
+            protein_A = protein_B
+            protein_B = temp
+
+        print("\t".join([protein_A, protein_B, pubmed, evidence_type]))
+
     f.close()
 
-    for interaction in interactions:
-        interaction_out_line = "\t".join(interaction) + "\n"
-        print(interaction_out_line)
 
+def main(interaction_file, uniprot_file):
 
-def main(interaction_file):
+    logger.info("Parsing uniprot file")
+    primary2secondary = parse_uniprot_file(uniprot_file)
 
     logger.info("Parsing interaction file")
-    parse_interaction_file(interaction_file)
+    parse_interaction_file(interaction_file, primary2secondary)
 
     logger.info("Done!")
 
@@ -217,11 +264,12 @@ if __name__ == "__main__":
         """)
 
     parser.add_argument('--interactions', required=True)
+    parser.add_argument('--uniprot', required=True)
 
     args = parser.parse_args()
 
     try:
-        main(interaction_file=args.interactions)
+        main(interaction_file=args.interactions, uniprot_file=args.uniprot)
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die
         sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")

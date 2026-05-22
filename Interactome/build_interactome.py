@@ -27,115 +27,88 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def parse_interactions(interactions_parsed_files):
+def parse_interactions(interactions_file):
     """
-    Parse the TSV files from interaction_parser.py with columns:
-    - Protein A Uniprot Primary Accession
-    - Protein B Uniprot Primary Accession
-    - Interaction Detection Method
-    - Pubmed ID
-    - Interaction Type
+    Parses an interaction file with 4 columns:
+    - protein A Uniprot AC
+    - protein B Uniprot AC
+    - pubmed
+    - evidence type
 
-    Filter on Interaction Detection Method and Interaction Type:
-    each interaction has at least 1 experiment,
-    at least one should be proven by any binary interaction detection method.
-    Removes self-loops.
-
-    Returns a list with 5 items (in each sublist):
-    - Protein A Uniprot Primary Accession
-    - Protein B Uniprot Primary Accession
-    - Publication count
-    - PubmedID(s)
-    - Experiment count
+    returns:
+    - PPI2pubmed2method
     """
 
-    PPI2PubmedID = {}
-    PPI2detectionMethod = {}
-    PPIs = []
+    PPI2pubmed2method = {}
 
+    try:
+        f = open(interactions_file, 'r')
+    except Exception as e:
+        logger.error("Opening provided interactions file %s: %s", interactions_file, e)
+        raise Exception("cannot open provided interactions file")
+
+    for line in f:
+        line_split = line.rstrip().split('\t')
+
+        PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
+        pubmed = line_split[2]
+        evidence_type = line_split[3]
+
+        if PPI not in PPI2pubmed2method:
+            PPI2pubmed2method[PPI] = {}
+        if pubmed not in PPI2pubmed2method[PPI]:
+            PPI2pubmed2method[PPI][pubmed] = [0, 0]  # [# evidence type "1", # evidence type "2"]
+        if evidence_type == "1":
+            PPI2pubmed2method[PPI][pubmed][0] += 1
+        elif evidence_type == "2":
+            PPI2pubmed2method[PPI][pubmed][1] += 1
+
+    f.close()
+
+    return(PPI2pubmed2method)
+
+
+def main(interactions_parsed_files, n_evidence, n_direct):
+
+    PPI2pubmed2method_merged = {}
+
+    # we have multiple files, one line is an interaction with publication
+    # and evidence type ("1" or "2"),
+    # interactions can be redundant between files,
+    # one publication can report more than one interaction
     for file in interactions_parsed_files:
-        f = open(file)
+        logger.info(f"Parsing {file}")
+        PPI2pubmed2method = parse_interactions(file)
 
-        for line in f:
-            line_split = line.rstrip('\n').split('\t')
-
-            detectionMethod = line_split[2]
-            PubmedIDs = line_split[3]
-            interactionType = line_split[4].rstrip('\n')
-
-            # remove Interaction Detection Methods:
-            # MI:0254 - genetic interference
-            # MI:0686 - unspecified method
-            # keep Interaction Type:
-            # MI:0407 - direct interaction
-            # MI:0915 - physical association
-            if detectionMethod not in ['MI:0254', 'MI:0686'] and interactionType in ['MI:0407', 'MI:0915']:
-                interactors = line_split[0] + '_' + line_split[1]  # proteinA + proteinB Primary Accessions
-
-                # store PubmedIDs as a list
-                # avoid duplications
-                if PPI2PubmedID.get(interactors, False):
-                    if PubmedIDs not in PPI2PubmedID[interactors]:
-                        PPI2PubmedID[interactors].append(PubmedIDs)
-                else:
-                    PPI2PubmedID[interactors] = [PubmedIDs]
-
-                # avoiding duplications
-                if PPI2detectionMethod.get(interactors, False):
-                    PPI2detectionMethod[interactors].append(detectionMethod)
-                else:
-                    PPI2detectionMethod[interactors] = [detectionMethod]
-
-        f.close()
-
-    for interactors in PPI2PubmedID:
-        # keep PPI if at least one experiment proven by a binary interaction method;
-        # remove PPI proven by Affintity Chromatography Technology (ACT) "MI:0004"
-        if any(exp != "MI:0004" for exp in PPI2detectionMethod[interactors]):
-            (proteinA, proteinB) = interactors.split('_')
-
-            # remove self-loops
-            if proteinA == proteinB:
-                continue
+        for PPI in PPI2pubmed2method:
+            if PPI not in PPI2pubmed2method_merged:
+                PPI2pubmed2method_merged[PPI] = PPI2pubmed2method[PPI].copy()
             else:
-                PubmedID = ', '.join(PPI2PubmedID[interactors])
-                PubmedID_count = len(PPI2PubmedID[interactors])
-                experiment_count = len(PPI2detectionMethod[interactors])
-
-                out_line = [proteinA,
-                            proteinB,
-                            str(PubmedID_count),
-                            PubmedID,
-                            str(experiment_count)]
-                PPIs.append(out_line)
-
-    return(PPIs)
-
-
-def save_interactome(PPIs):
-    """
-    Parse PPIs and saves one interaction per line in TSV file.
-
-    Print interactome to STDOUT in SIF format:
-    - protein A
-    - "pp" for "protein-protein interaction"
-    - protein B
-    """
-    for PPI in PPIs:
-        proteinA = PPI[0]
-        proteinB = PPI[1]
-
-        out_line = (proteinA, "pp", proteinB)
-        print('\t'.join(out_line))
-
-
-def main(interactions_parsed_files):
-
-    logger.info("Parsing interaction files")
-    PPIs = parse_interactions(interactions_parsed_files)
-
-    logger.info("Printing interactome")
-    save_interactome(PPIs)
+                for pubmed in PPI2pubmed2method[PPI]:
+                    if pubmed not in PPI2pubmed2method_merged[PPI]:
+                        PPI2pubmed2method_merged[PPI][pubmed] = PPI2pubmed2method[PPI][pubmed].copy()
+                    else:
+                        # keep evidence counts with the largest evidence type count of "1"
+                        if PPI2pubmed2method[PPI][pubmed][0] > PPI2pubmed2method_merged[PPI][pubmed][0]:
+                            PPI2pubmed2method_merged[PPI][pubmed][0] = PPI2pubmed2method[PPI][pubmed][0]
+                            PPI2pubmed2method_merged[PPI][pubmed][1] = PPI2pubmed2method[PPI][pubmed][1]
+                        elif PPI2pubmed2method[PPI][pubmed][0] == PPI2pubmed2method_merged[PPI][pubmed][0]:
+                            # take max of evidence type "2"
+                            if PPI2pubmed2method[PPI][pubmed][1] > PPI2pubmed2method_merged[PPI][pubmed][1]:
+                                PPI2pubmed2method_merged[PPI][pubmed][1] = PPI2pubmed2method[PPI][pubmed][1]
+    
+    logger.info(f"Filtering on evidence")
+    for PPI in PPI2pubmed2method_merged:
+        # sum evidence for each interaction
+        evidence_sum = [0, 0]
+        for pubmed in PPI2pubmed2method_merged[PPI]:
+            evidence_sum[0] += PPI2pubmed2method_merged[PPI][pubmed][0]
+            evidence_sum[1] += PPI2pubmed2method_merged[PPI][pubmed][1]
+        
+        # keep interactions with at least N evidences including N direct (=="1")
+        if (evidence_sum[0] >= n_direct) and (evidence_sum[0] + evidence_sum[1] >= n_evidence):
+            (protein_A, protein_B) = PPI.split(':')
+            print('\t'.join([protein_A, "pp", protein_B]))
 
     logger.info("Done!")
 
@@ -152,21 +125,22 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        Parses the output file(s) produced by interaction_parser.py
-        and uniprot_parsed.tsv produced by uniprot_parser.py
-        to produce an interactome (with no self-loops)
-        in SIF format:
-        - Protein A
-        - "pp" for "protein-protein interaction"
-        - Protein B
+        Builds and prints an interactome to STDOUT in a SIF-like format:
+        - protein A
+        - "pp" (for "protein-protein interaction")
+        - protein B
         """)
 
-    parser.add_argument('--interactions', nargs='+', required=True)
+    parser.add_argument('--interactions_parsed', nargs='+', required=True)
+    parser.add_argument('--n_evidence', required=False, default=2, type=int)
+    parser.add_argument('--n_direct', required=False, default=1, type=int)
 
     args = parser.parse_args()
 
     try:
-        main(interactions_parsed_files=args.interactions)
+        main(interactions_parsed_files=args.interactions_parsed,
+             n_evidence=args.n_evidence,
+             n_direct=args.n_direct)
 
     except Exception as e:
         # details on the issue should be in the exception name, print to stderr and die

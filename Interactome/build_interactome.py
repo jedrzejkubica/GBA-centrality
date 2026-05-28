@@ -50,6 +50,11 @@ def parse_interactions(interactions_file):
     for line in f:
         line_split = line.rstrip().split('\t')
 
+        if(len(line_split) != 4):
+            logger.error("Interactions file %s has bad line (not 4 tab-separated fields): %s",
+                         interactions_file, line)
+            raise Exception("Bad line in the interactions file, not 4 tab-separated fields")
+
         PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
         pubmed = line_split[2]
         evidence_type = line_split[3]

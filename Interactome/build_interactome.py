@@ -136,14 +136,14 @@ if __name__ == "__main__":
         - protein B
         """)
 
-    parser.add_argument('--interactions_parsed', nargs='+', required=True)
+    parser.add_argument('--interactions', nargs='+', required=True)
     parser.add_argument('--n_evidence', required=False, default=2, type=int)
     parser.add_argument('--n_direct', required=False, default=1, type=int)
 
     args = parser.parse_args()
 
     try:
-        main(interactions_parsed_files=args.interactions_parsed,
+        main(interactions_parsed_files=args.interactions,
              n_evidence=args.n_evidence,
              n_direct=args.n_direct)
 

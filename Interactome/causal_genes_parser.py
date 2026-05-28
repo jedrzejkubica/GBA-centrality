@@ -28,15 +28,12 @@ logger = logging.getLogger(__name__)
 
 def parse_uniprot(uniprot_file):
     '''
-    Parses tab-seperated Uniprot file produced by Interactome/uniprot_parser.py
-    which consists of 7 columns (one record per line):
-    - Uniprot Primary Accession
-    - Taxonomy Identifier
-    - ENST (or a comma seperated list of ENSTs)
-    - ENSG (or a comma seperated list of ENSGs)
-    - Uniprot Secondary Accession (or a comma seperated list of Uniprot Secondary Accessions)
-    - GeneID (or a comma seperated list of GeneIDs)
-    - Gene Name (or a comma seperated list of Gene Names)
+    Parse a TSV file from uniprot_parser.py with columns:
+    - Uniprot Primary AC
+    - Uniprot Secondary AC(s)
+    - tax ID
+    - gene name(s)
+    - ENSG(s)
 
     Returns:
       - gene2ENSG: dict with key=gene, value=ENSG
@@ -56,21 +53,21 @@ def parse_uniprot(uniprot_file):
 
     # skip header
     line = f.readline()
-    if not line.startswith("Primary_AC\t"):
+    if not line.startswith("PrimaryAC\t"):
         logging.error("uniprot file %s is headerless? expecting headers but got %s",
                       uniprot_file, line)
         raise Exception("Uniprot file problem")
 
     for line in f:
-        split_line = line.rstrip('\r\n').split('\t')
+        line_split = line.rstrip().split("\t")
 
         # if some records are incomplete, die
-        if len(split_line) != 7:
-            logging.error("uniprot file %s line doesn't have 7 fields: %s",
+        if len(line_split) != 5:
+            logging.error("uniprot file %s line doesn't have 5 fields: %s",
                           uniprot_file, line)
             raise Exception("Uniprot file problem")
 
-        (AC_primary, TaxID, ENSTs, ENSGs, AC_secondary, GeneIDs, geneNames) = split_line
+        (primaryAC, secondaryACs, taxID, gene_names, ENSGs) = line_split
 
         # make sure there is at least one ENSG and keep only the first one
         if ENSGs == "":
@@ -78,12 +75,12 @@ def parse_uniprot(uniprot_file):
         ENSG = ENSGs.split(',')[0]
 
         # make sure there is at least one gene name and keep only the first one
-        if geneNames == "":
+        if gene_names == "":
             continue
-        geneName = geneNames.split(',')[0]
+        geneName = gene_names.split(',')[0]
 
         gene2ENSG[geneName] = ENSG
-        ENSG2uniprot[ENSG] = AC_primary
+        ENSG2uniprot[ENSG] = primaryAC
 
     return(gene2ENSG, ENSG2uniprot)
 

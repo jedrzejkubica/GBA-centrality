@@ -234,6 +234,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                     break
                 elif(interaction_type != "MI:0403"):
                     evidence_type = "2"
+                    break
         if(evidence_type == ""):
             logger.warning(f"Interaction type for {protein_A}:{protein_B} not found or bad type, skipping it")
             continue

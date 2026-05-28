@@ -40,9 +40,11 @@ def parse_uniprot_file(uniprot_file):
     Returns:
     - primary2secondary: dict with key=Uniprot Primary AC,
         value=list of Uniprot Secondary ACs
+    - secondary2primary: dict with key=Uniprot Secondary AC, value=lsit of Uniprot Primary ACs
     """
 
     primary2secondary = {}
+    secondary2primary = {}
 
     try:
         f = open(uniprot_file)
@@ -67,13 +69,18 @@ def parse_uniprot_file(uniprot_file):
             secondaryACs = line_split[1].split(",")
 
         primary2secondary[primaryAC] = secondaryACs
+        for secondaryAC in secondaryACs:
+            if secondaryAC in secondary2primary:
+                secondary2primary[secondaryAC].append(primaryAC)
+            else:
+                secondary2primary[secondaryAC] = [primaryAC]
 
     f.close()
 
-    return(primary2secondary)
+    return(primary2secondary, secondary2primary)
 
 
-def parse_interaction_file(interaction_file, primary2secondary):
+def parse_interaction_file(interaction_file, primary2secondary, secondary2primary):
     """
     Parse a miTAB 2.5 or 2.7 file.
 
@@ -123,7 +130,7 @@ def parse_interaction_file(interaction_file, primary2secondary):
             if(re_uniprot.match(potential)):
                 protein_A = re_uniprot.match(potential).group(2)  # second parenthesized group in re_uniprot
                 # check if it is a valid primary AC
-                if(protein_A in primary2secondary):
+                if(protein_A in primary2secondary) or (protein_A in secondary2primary):
                     break
                 else:
                     protein_A = ""
@@ -138,7 +145,7 @@ def parse_interaction_file(interaction_file, primary2secondary):
             if(re_uniprot.match(potential)):
                 protein_B = re_uniprot.match(potential).group(2)
                 # check if it is a valid primary AC
-                if(protein_B in primary2secondary):
+                if(protein_B in primary2secondary) or (protein_B in secondary2primary):
                     break
                 else:
                     protein_B = ""
@@ -195,6 +202,7 @@ def parse_interaction_file(interaction_file, primary2secondary):
         for tax in tax_B_split:
             if((re_taxID.match(tax))):
                 taxID_B = re_taxID.match(tax).group(1)
+                break
         if(taxID_B == ""):
             logger.warning(f"Tax ID not found at line {line_count}, skipping it")
             continue
@@ -236,10 +244,10 @@ def parse_interaction_file(interaction_file, primary2secondary):
 def main(interaction_file, uniprot_file):
 
     logger.info("Parsing uniprot file")
-    primary2secondary = parse_uniprot_file(uniprot_file)
+    (primary2secondary, secondary2primary) = parse_uniprot_file(uniprot_file)
 
     logger.info("Parsing interaction file")
-    parse_interaction_file(interaction_file, primary2secondary)
+    parse_interaction_file(interaction_file, primary2secondary, secondary2primary)
 
     logger.info("Done!")
 

@@ -42,7 +42,7 @@ def parse_uniprot_file(uniprot_file):
     # print header to STDOUT
     print("\t".join(["PrimaryAC", "SecondaryACs", "TaxID", "GeneNames", "ENSGs"]))
 
-    re_AC = re.compile(r'^AC\s+(\S.*);$')  # optional trailing ";"
+    re_AC = re.compile(r'^AC\s+(\S.*);$')
     # GN lines might have optionally: multiple names separated by ",", "{}" block and trailing ";"
     re_GN = re.compile(r'^GN\s+((Name=\S.*)|(Synonyms=\S.*))[,;]?$')
     re_Name = re.compile(r'^Name=([\S][^{;]+?)(?:\s*\{[^}]*\})?;?$')

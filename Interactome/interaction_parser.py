@@ -130,7 +130,11 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
             if(re_uniprot.match(potential)):
                 protein_A = re_uniprot.match(potential).group(2)  # second parenthesized group in re_uniprot
                 # check if it is a valid primary AC
-                if(protein_A in primary2secondary) or (protein_A in secondary2primary):
+                if(protein_A in primary2secondary):
+                    break
+                if(protein_A in secondary2primary):
+                    # if it is a secondary AC, keep the first primary AC associated to it
+                    protein_A = secondary2primary[protein_A][0]
                     break
                 else:
                     protein_A = ""
@@ -145,7 +149,11 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
             if(re_uniprot.match(potential)):
                 protein_B = re_uniprot.match(potential).group(2)
                 # check if it is a valid primary AC
-                if(protein_B in primary2secondary) or (protein_B in secondary2primary):
+                if(protein_B in primary2secondary):
+                    break
+                if(protein_B in secondary2primary):
+                    # if it is a secondary AC, keep the first primary AC associated to it
+                    protein_B = secondary2primary[protein_B][0]
                     break
                 else:
                     protein_B = ""

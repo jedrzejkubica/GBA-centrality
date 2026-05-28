@@ -48,13 +48,13 @@ def parse_uniprot(uniprot_file):
     try:
         f = open(uniprot_file, 'r')
     except Exception as e:
-        logging.error("Opening provided uniprot file %s: %s", uniprot_file, e)
+        logger.error("Opening provided uniprot file %s: %s", uniprot_file, e)
         raise Exception("cannot open provided Uniprot file")
 
     # skip header
     line = f.readline()
     if not line.startswith("PrimaryAC\t"):
-        logging.error("uniprot file %s is headerless? expecting headers but got %s",
+        logger.error("uniprot file %s is headerless? expecting headers but got %s",
                       uniprot_file, line)
         raise Exception("Uniprot file problem")
 
@@ -63,7 +63,7 @@ def parse_uniprot(uniprot_file):
 
         # if some records are incomplete, die
         if len(line_split) != 5:
-            logging.error("uniprot file %s line doesn't have 5 fields: %s",
+            logger.error("uniprot file %s line doesn't have 5 fields: %s",
                           uniprot_file, line)
             raise Exception("Uniprot file problem")
 

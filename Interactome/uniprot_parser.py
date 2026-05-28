@@ -62,8 +62,11 @@ def parse_uniprot_file(uniprot_file):
     for line in uniprot_file:
         if re_AC.match(line):
             ACs_split = re_AC.match(line).group(1).split("; ")
-            primary_AC = ACs_split[0]
-            secondary_ACs = ACs_split[1:]
+            if primary_AC == "":
+                primary_AC = ACs_split[0]
+                secondary_ACs = ACs_split[1:]
+            else:
+                secondary_ACs += ACs_split
         elif re_GN.match(line):
             GN_split = re_GN.match(line).group(1).split("; ")
             for el in GN_split:

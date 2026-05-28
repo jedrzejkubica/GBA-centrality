@@ -263,12 +263,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="""
-        Parse a miTAB 2.5/2.7 file, and print to STDOUT in the TSV format:
-        - protein A Uniprot ID
-        - protein B Uniprot ID
-        - interaction detection method
+        Parse a miTAB 2.5/2.7 file.
+        For each interaction, find Uniprot ACs of interacting proteins,
+        interaction detection method, pubmed and interaction type.
+        Filter interactions based on the detection method and interaction type.
+        Print to STDOUT in the TSV format:
+        - protein A Uniprot AC
+        - protein B Uniprot AC
         - pubmed
-        - interaction type
+        - evidence type
         """)
 
     parser.add_argument('--interactions', required=True)

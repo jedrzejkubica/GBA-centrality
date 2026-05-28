@@ -58,7 +58,7 @@ def parse_uniprot_file(uniprot_file):
     # some Names/Synonyms/taxIDs have evidence codes, eg
     # Name=atg-18 {ECO:0000312|WormBase:F41E6.13a};
     # -> re to remove this
-    re_removeEC = re.compile(r' {ECO[^}]+}$')
+    re_removeEC = re.compile(r' {ECO[^}]+}')
 
     # accumulators for current entry. ACs and taxID get processed on the fly but
     # gene names/synomyms at the end only => store in a string
@@ -100,8 +100,10 @@ def parse_uniprot_file(uniprot_file):
             # process symonyms in the same way
             synonymsAll = re_Synonyms.findall(gene_data)
             for synonyms in synonymsAll:
-                for synonym in synonyms.split(', '):
-                    genes += ',' + re_removeEC.sub('', synonym)
+                synonyms_ECremoved = re_removeEC.sub('', synonyms)
+                for synonym in synonyms_ECremoved.split(', '):
+                    synonym = synonym.strip()
+                    genes += ',' + synonym
 
             if (primary_AC != "" and taxID != ""):
                 out_line = [primary_AC,

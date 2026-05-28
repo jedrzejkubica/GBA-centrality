@@ -33,31 +33,39 @@ def parse_uniprot_file(uniprot_file):
 
     Print to STDOUT in TSV format:
     - Uniprot Primary AC
-    - Uniprot Secondary AC(s)
+    - Uniprot Secondary AC(s) (comma-separated)
     - tax ID
-    - gene name(s)
-    - ENSG(s)
+    - gene name(s) (comma-separated)
     """
 
     # print header to STDOUT
-    print("\t".join(["PrimaryAC", "SecondaryACs", "TaxID", "GeneNames", "ENSGs"]))
+    print("\t".join(["PrimaryAC", "SecondaryACs", "TaxID", "GeneNames"]))
 
-    re_AC = re.compile(r'^AC\s+(\S.*);$')
-    # GN lines might have optionally: multiple names separated by ",", "{}" block and trailing ";"
-    re_GN = re.compile(r'^GN\s+((Name=\S.*)|(Synonyms=\S.*))[,;]?$')
-    re_Name = re.compile(r'^Name=([\S][^{;]+?)(?:\s*\{[^}]*\})?;?$')
-    re_Synonyms = re.compile(r'^Synonyms=([\S][^{;]+?)(?:\s*\{[^}]*\})?;?$')
+    re_AC = re.compile(r'^AC\s+(\S.+);$')
+    re_taxID = re.compile(r'^OX\s+NCBI_TaxID=([^;]+);$')
 
-    re_taxID = re.compile(r'^OX\s+NCBI_TaxID=(\d+);?$')
-    # ENSGs and ENSTs should be in the same line
-    re_Ensembl = re.compile(r'^DR\s+Ensembl;')
-    re_ENSG = re.compile(r'(ENSG[\d\.]+)')
+    # GN data can be multi-line, parse them all and concatenate, then
+    # process at end of record
+    re_GN = re.compile(r'^GN\s+(\S.+)$')
+    # All gene name(s) and synonym(s) will be output together, comma-separated
+    # but without distinguishing between Name, Synonym, or even if multiple
+    # genes were listed by uniprot (with "GN  and")
 
+    # REs for extracting Name and Synonyms from concatenated GN data
+    re_Name = re.compile(r'Name=([^;]+);')
+    re_Synonyms = re.compile(r'Synonyms=([^;]+);')
+
+    # some Names/Synonyms/taxIDs have evidence codes, eg
+    # Name=atg-18 {ECO:0000312|WormBase:F41E6.13a};
+    # -> re to remove this
+    re_removeEC = re.compile(r' {ECO[^}]+}$')
+
+    # accumulators for current entry. ACs and taxID get processed on the fly but
+    # gene names/synomyms at the end only => store in a string
     primary_AC = ""
     secondary_ACs = []
     taxID = ""
-    gene_names = []
-    ENSGs = []
+    gene_data = ""
 
     for line in uniprot_file:
         if re_AC.match(line):
@@ -68,48 +76,56 @@ def parse_uniprot_file(uniprot_file):
             else:
                 secondary_ACs += ACs_split
         elif re_GN.match(line):
-            GN_split = re_GN.match(line).group(1).split("; ")
-            for el in GN_split:
-                if re_Name.match(el):
-                    names_split = re_Name.match(el).group(1).split(', ')
-                    for name in names_split:
-                        gene_names.append(name)
-                elif re_Synonyms.match(el):
-                    synonyms_split = re_Synonyms.match(el).group(1).split(', ')
-                    for synonym in synonyms_split:
-                        gene_names.append(synonym)
+            if gene_data != "":
+                gene_data += " "
+            gene_data += re_GN.match(line).group(1)
         elif re_taxID.match(line):
             taxID = re_taxID.match(line).group(1)
-        elif re_Ensembl.match(line):
-            Ensembl_split = line.split("; ")
-            for el in Ensembl_split:
-                if re_ENSG.match(el):
-                    ENSG = re_ENSG.match(el).group(1).split('.')[0]  # remove version numbers
-                    ENSGs.append(ENSG)
+            # remove ECO if present
+            taxID = re_removeEC.sub('', taxID)
+            # sanity check: should be digits only
+            try:
+                taxID = int(taxID)
+            except Exception:
+                raise Exception(f"taxID {taxID} not an integer in {primary_AC}")
+
         elif line.startswith("//"):  # end of the record
-            if(primary_AC != "" and taxID != "" and len(gene_names) != 0 and len(ENSGs) != 0):
+            # process gene_data: extract each name and remove ECO if present
+            genes = ""
+            names = re_Name.findall(gene_data)
+            for name in names:
+                if genes != "":
+                    genes += ","
+                genes += re_removeEC.sub('', name)
+            # process symonyms in the same way
+            synonymsAll = re_Synonyms.findall(gene_data)
+            for synonyms in synonymsAll:
+                for synonym in synonyms.split(', '):
+                    genes += ',' + re_removeEC.sub('', synonym)
+
+            if (primary_AC != "" and taxID != ""):
                 out_line = [primary_AC,
                             ",".join(secondary_ACs),
-                            taxID,
-                            ",".join(gene_names),
-                            ",".join(ENSGs)]
+                            str(taxID),
+                            genes]
                 print('\t'.join(out_line))
-                
+
             primary_AC = ""
             secondary_ACs = []
             taxID = ""
-            gene_names = []
-            ENSGs = []
+            gene_data = ""
 
-            continue
+        # sanity check: did we miss anything?
+        elif line.startswith(('AC', 'OX', 'GN')):
+            logger.error(f"Problem parsing entry {primary_AC}: failed to parse AC/OX/GN, debug me!")
+            raise Exception('failed to parse uniprot entry')
 
 
 def main():
-
     logger.info("Parsing uniprot file")
     parse_uniprot_file(sys.stdin)
-
     logger.info("Done!")
+
 
 if __name__ == "__main__":
     script_name = os.path.basename(sys.argv[0])

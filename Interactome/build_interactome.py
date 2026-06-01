@@ -40,34 +40,27 @@ def parse_interactions(interactions_file):
     """
 
     PPI2pubmed2method = {}
+    
+    with open(interactions_file, 'r') as f:
+        for line in f:
+            line_split = line.rstrip().split('\t')
 
-    try:
-        f = open(interactions_file, 'r')
-    except Exception as e:
-        logger.error(f"Opening provided interactions file {interactions_file}: {e}")
-        raise Exception(f"cannot open provided interactions file {interactions_file}")
+            if(len(line_split) != 4):
+                logger.error(f"Interactions file {interactions_file} has bad line (not 4 tab-separated fields): {line}")
+                raise Exception(f"Bad line in the interactions file {interactions_file}, not 4 tab-separated fields")
 
-    for line in f:
-        line_split = line.rstrip().split('\t')
+            PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
+            pubmed = line_split[2]
+            evidence_type = line_split[3]
 
-        if(len(line_split) != 4):
-            logger.error(f"Interactions file {interactions_file} has bad line (not 4 tab-separated fields): {line}")
-            raise Exception(f"Bad line in the interactions file {interactions_file}, not 4 tab-separated fields")
-
-        PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
-        pubmed = line_split[2]
-        evidence_type = line_split[3]
-
-        if PPI not in PPI2pubmed2method:
-            PPI2pubmed2method[PPI] = {}
-        if pubmed not in PPI2pubmed2method[PPI]:
-            PPI2pubmed2method[PPI][pubmed] = [0, 0]  # [# evidence type "1", # evidence type "2"]
-        if evidence_type == "1":
-            PPI2pubmed2method[PPI][pubmed][0] += 1
-        elif evidence_type == "2":
-            PPI2pubmed2method[PPI][pubmed][1] += 1
-
-    f.close()
+            if PPI not in PPI2pubmed2method:
+                PPI2pubmed2method[PPI] = {}
+            if pubmed not in PPI2pubmed2method[PPI]:
+                PPI2pubmed2method[PPI][pubmed] = [0, 0]  # [# evidence type "1", # evidence type "2"]
+            if evidence_type == "1":
+                PPI2pubmed2method[PPI][pubmed][0] += 1
+            elif evidence_type == "2":
+                PPI2pubmed2method[PPI][pubmed][1] += 1
 
     return(PPI2pubmed2method)
 

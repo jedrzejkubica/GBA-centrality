@@ -46,15 +46,14 @@ def parse_uniprot(uniprot_file):
         # skip header
         header = f.readline()
         if not header.startswith("PrimaryAC\t"):
-            raise Exception("uniprot file %s is headerless? expecting headers but got %s",
-                        uniprot_file, header)
+            raise Exception(f"uniprot file {uniprot_file} is headerless? expecting headers but got {header}")
 
         for line in f:
             line_split = line.rstrip("\n").split("\t")
 
             # if some records are incomplete, die
             if(len(line_split) != 4):
-                raise Exception("Bad line in the uniprot file, not 4 tab-separated fields")
+                raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 4 tab-separated fields")
 
             (primaryAC, secondaryACs, taxID, gene_names) = line_split
 
@@ -95,8 +94,8 @@ def parse_causal_genes(causal_genes_file, gene2uniprot):
                 else:
                     logger.warning(f"causal gene {gene_name} is not a known gene in gene2uniprot, skipping it")
             else:
-                logger.error(f"Bad line in the causal genes file, doesn't look like a gene name: {line}")
-                raise Exception("Bad line in the causal genes file")
+                logger.error(f"Bad line in the causal genes file {causal_genes_file}, doesn't look like a gene name: {line}")
+                raise Exception(f"Bad line in the causal genes file {causal_genes_file}")
 
     logger.info(f"found {num_found_genes} causal genes")
 
@@ -143,5 +142,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         # details on the issue should be in the exception name, print to stderr and die
-        sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
+        sys.stderr.write(f"ERROR in {script_name} : {repr(e)}\n")
         sys.exit(1)

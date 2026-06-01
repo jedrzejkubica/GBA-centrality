@@ -44,16 +44,15 @@ def parse_interactions(interactions_file):
     try:
         f = open(interactions_file, 'r')
     except Exception as e:
-        logger.error("Opening provided interactions file %s: %s", interactions_file, e)
-        raise Exception("cannot open provided interactions file")
+        logger.error(f"Opening provided interactions file {interactions_file}: {e}")
+        raise Exception(f"cannot open provided interactions file {interactions_file}")
 
     for line in f:
         line_split = line.rstrip().split('\t')
 
         if(len(line_split) != 4):
-            logger.error("Interactions file %s has bad line (not 4 tab-separated fields): %s",
-                         interactions_file, line)
-            raise Exception("Bad line in the interactions file, not 4 tab-separated fields")
+            logger.error(f"Interactions file {interactions_file} has bad line (not 4 tab-separated fields): {line}")
+            raise Exception(f"Bad line in the interactions file {interactions_file}, not 4 tab-separated fields")
 
         PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
         pubmed = line_split[2]
@@ -149,5 +148,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         # details on the issue should be in the exception name, print to stderr and die
-        sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")
+        sys.stderr.write(f"ERROR in {script_name} : {repr(e)}\n")
         sys.exit(1)

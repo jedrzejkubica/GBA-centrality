@@ -48,8 +48,8 @@ def parse_uniprot_file(uniprot_file):
     try:
         f = open(uniprot_file)
     except Exception as e:
-        logger.error("Opening provided uniprot file %s: %s", uniprot_file, e)
-        raise Exception("cannot open provided uniprot file")
+        logger.error(f"Opening provided uniprot file {uniprot_file}: {e}")
+        raise Exception(f"cannot open provided uniprot file {uniprot_file}")
 
     header = f.readline()
 
@@ -57,9 +57,8 @@ def parse_uniprot_file(uniprot_file):
         line_split = line.rstrip("\n").split("\t")
 
         if(len(line_split) != 4):
-            logger.error("Uniprot file %s has bad line (not 4 tab-separated fields): %s",
-                         uniprot_file, line)
-            raise Exception("Bad line in the uniprot file, not 4 tab-separated fields")
+            logger.error(f"Uniprot file {uniprot_file} has bad line (not 4 tab-separated fields): {line}")
+            raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 4 tab-separated fields")
         
         primaryAC = line_split[0]
         if line_split[1] == "":
@@ -108,8 +107,8 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
     try:
         f = open(interaction_file, 'r')
     except Exception as e:
-        logger.error("Opening provided interaction file %s: %s", interaction_file, e)
-        raise Exception("cannot open provided interaction file")
+        logger.error(f"Opening provided interaction file {interaction_file}: {e}")
+        raise Exception(f"cannot open provided interaction file {interaction_file}")
 
     header = f.readline()
 

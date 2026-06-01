@@ -91,25 +91,23 @@ def parse_uniprot_file(uniprot_file):
 
         elif line.startswith("//"):  # end of the record
             # process gene_data: extract each name and remove ECO if present
-            genes = ""
+            genes = []
             names = re_Name.findall(gene_data)
             for name in names:
-                if genes != "":
-                    genes += ","
-                genes += re_removeEC.sub('', name)
+                genes.append(re_removeEC.sub('', name))
             # process symonyms in the same way
             synonymsAll = re_Synonyms.findall(gene_data)
             for synonyms in synonymsAll:
                 synonyms_ECremoved = re_removeEC.sub('', synonyms)
                 for synonym in synonyms_ECremoved.split(', '):
                     synonym = synonym.strip()
-                    genes += ',' + synonym
+                    genes.append(synonym)
 
             if (primary_AC != "" and taxID != ""):
                 out_line = [primary_AC,
                             ",".join(secondary_ACs),
                             str(taxID),
-                            genes]
+                            ",".join(genes)]
                 print('\t'.join(out_line))
 
             primary_AC = ""

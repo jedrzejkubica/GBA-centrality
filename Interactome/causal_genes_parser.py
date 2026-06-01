@@ -35,53 +35,45 @@ def parse_uniprot(uniprot_file):
     - gene name(s) (comma-separated)
 
     Returns:
-      - uniprot2gene: dict with key=Primary accession, value=gene name
+      - gene2uniprot: dict with key=gene name, value=Uniprot Primary AC
 
     Note: if more than one gene name is associated with a particular protein,
           then keeping the first gene name from the list
     """
-    uniprot2gene = {}
     gene2uniprot = {}
 
-    try:
-        f = open(uniprot_file, 'r')
-    except Exception as e:
-        raise Exception("cannot open provided Uniprot file %s: %s", uniprot_file, e)
+    with open(uniprot_file, 'r') as f:
+        # skip header
+        header = f.readline()
+        if not header.startswith("PrimaryAC\t"):
+            raise Exception("uniprot file %s is headerless? expecting headers but got %s",
+                        uniprot_file, header)
 
-    # skip header
-    header = f.readline()
-    if not header.startswith("PrimaryAC\t"):
-        raise Exception("uniprot file %s is headerless? expecting headers but got %s",
-                      uniprot_file, header)
+        for line in f:
+            line_split = line.rstrip("\n").split("\t")
 
-    for line in f:
-        line_split = line.rstrip("\n").split("\t")
+            # if some records are incomplete, die
+            if(len(line_split) != 4):
+                raise Exception("Bad line in the uniprot file, not 4 tab-separated fields")
 
-        # if some records are incomplete, die
-        if(len(line_split) != 4):
-            raise Exception("Bad line in the uniprot file, not 4 tab-separated fields")
+            (primaryAC, secondaryACs, taxID, gene_names) = line_split
 
-        (primaryAC, secondaryACs, taxID, gene_names) = line_split
+            # make sure there is at least one gene name and keep only the first one
+            if gene_names == "":
+                continue
+            gene = gene_names.split(',')[0]
+            gene2uniprot[gene] = primaryAC
 
-        # make sure there is at least one gene name and keep only the first one
-        if gene_names == "":
-            continue
-        gene = gene_names.split(',')[0]
-
-        uniprot2gene[primaryAC] = gene
-        gene2uniprot[gene] = primaryAC
-
-    return(uniprot2gene, gene2uniprot)
+    return(gene2uniprot)
 
 
-def parse_causal_genes(causal_genes_file, uniprot2gene, gene2uniprot):
+def parse_causal_genes(causal_genes_file, gene2uniprot):
     '''
     Build a list of protein Uniprot Primary AC corresponding to
     causal gene names from causal_genes_file
 
     arguments:
     - causal_genes_file: filename (with path) of known causal genes, one gene name per line
-    - uniprot2gene: dict mapping Uniprot Primary AC to gene name
     - gene2uniprot: dict mapping gene name to Uniprot Primary AC
 
     returns:
@@ -90,61 +82,38 @@ def parse_causal_genes(causal_genes_file, uniprot2gene, gene2uniprot):
     causal_proteins = []
     num_found_genes = 0
 
-    try:
-        f_causal = open(causal_genes_file, 'r')
-    except Exception as e:
-        logger.error("Opening provided causal genes file %s: %s", causal_genes_file, e)
-        raise Exception("cannot open provided causal genes file")
+    with open(causal_genes_file, 'r') as f_causal:
+        re_causal = re.compile(r'^[a-zA-Z0-9\-_]+$')  # allow for: letters, digits, "_", "-"
 
-    re_causal = re.compile(r'^[a-zA-Z0-9\-_]+$')  # allow for: letters, digits, "_", "-"
-
-    for line in f_causal:
-        if re_causal.match(line):
+        for line in f_causal:
             gene_name = line.rstrip()
-            if gene_name in gene2uniprot:
-                uniprot_ac = gene2uniprot[gene_name]
-                if uniprot_ac in uniprot2gene:
+            if re_causal.match(gene_name):
+                if gene_name in gene2uniprot:
+                    uniprot_ac = gene2uniprot[gene_name]
                     causal_proteins.append(uniprot_ac)
                     num_found_genes += 1
                 else:
-                    logger.warning("causal gene %s == %s is not in Uniprot, skipping it",
-                                   gene_name, uniprot_ac)
+                    logger.warning(f"causal gene {gene_name} is not a known gene in gene2uniprot, skipping it")
             else:
-                logger.warning("causal gene %s is not a known gene in gene2uniprot, skipping it",
-                               gene_name)
-        else:
-            logger.error("Bad line in the causal genes file, doesn't look like a gene name: %s", line)
-            raise Exception("Bad line in the causal genes file")
+                logger.error(f"Bad line in the causal genes file, doesn't look like a gene name: {line}")
+                raise Exception("Bad line in the causal genes file")
 
-    f_causal.close()
-
-    logger.info("found %i causal genes with known ENSG", num_found_genes)
+    logger.info(f"found {num_found_genes} causal genes")
 
     return(causal_proteins)
-
-
-def save_causal(causal_proteins):
-    '''
-    Print scores to stdout in TSV format, 2 columns: node score
-    a seeds.txt file with one protein per line
-
-    arguments:
-    - causal_proteins: list of causal proteins
-    '''
-    for protein in causal_proteins:
-        print(protein)
 
 
 def main(uniprot_file, causal_genes_file):
 
     logger.info("Parsing Uniprot file")
-    (uniprot2gene, gene2uniprot) = parse_uniprot(uniprot_file)
+    gene2uniprot = parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
-    (causal_proteins) = parse_causal_genes(causal_genes_file, uniprot2gene, gene2uniprot)
+    causal_proteins = parse_causal_genes(causal_genes_file, gene2uniprot)
 
     logger.info("Printing protein seeds")
-    save_causal(causal_proteins)
+    for protein in causal_proteins:
+        print(protein)
 
     logger.info("Done!")
 

@@ -25,18 +25,18 @@ gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/un
 
 ### Interactome SIF file
 
-Build a human interactome (undirected and unweighted) using protein-protein interaction (PPI) data from [BioGRID](https://thebiogrid.org/), [IntAct](https://www.ebi.ac.uk/intact/home) and [Reactome](https://reactome.org/download-data).
+Build a human interactome (undirected and unweighted) using protein-protein interaction (PPI) data from [BioGRID](https://thebiogrid.org/) and [IntAct](https://www.ebi.ac.uk/intact/home).
 
 **Step 1. Download and extract human PPI data**
 
-BioGRID Multi-Validated (MV) Datasets (file size ~35Mb)
+BioGRID (zipped file size ~176Mb)
 
 ```
-wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-MV-Physical-LATEST.mitab.zip
-unzip BIOGRID-MV-Physical-LATEST.mitab.zip
+wget https://downloads.thebiogrid.org/Download/BioGRID/Latest-Release/BIOGRID-ORGANISM-LATEST.mitab.zip
+unzip BIOGRID-ORGANISM-LATEST.mitab.zip BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt
 ```
 
-IntAct (file size ~1.3Gb)
+IntAct (zipped file size ~1.3Gb)
 
 ```
 wget https://ftp.ebi.ac.uk/pub/databases/intact/current/psimitab/intact.zip
@@ -46,14 +46,16 @@ unzip intact.zip
 
 **Step 2. Parse PPI data**
 
+The PPI data will be filtered on "Interaction Detection Method", ie. ignore some "bad" detection methods (MI:0254 (genetic interference) and MI:0686 (unspecified method)).
+
 Parse BioGRID
 
 ```
 python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/BIOGRID-MV-Physical-*.mitab.txt \
+  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt \
   --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  1> ~/GBA-input/interactions_Biogrid-MV.tsv \
-  2> ~/GBA-input/interactions_Biogrid-MV.log
+  1> ~/GBA-input/interactions_Biogrid.tsv \
+  2> ~/GBA-input/interactions_Biogrid.log
 ```
 
 Parse IntAct
@@ -69,32 +71,35 @@ python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
 
 **Step 3. Build a human interactome**
 
-The interactome data will be filtered on "Interaction Detection Method" and "Interaction Type": each interaction must be confirmed by at least 1 binary detection method. Then the interactome will be saved in a file format similar to SIF (https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format).
+The interactome will be saved in a file format similar to SIF (https://cytoscape.org/manual/Cytoscape2_5Manual.html#SIF%20Format)
+with 3 tab-separated columns: protein1 "pp" protein2.
 
 ```
 python ~/Software/GBA-centrality/Interactome/build_interactome.py \
-  --interactions ~/GBA-input/interactions_Biogrid-MV.tsv ~/GBA-input/interactions_Intact.tsv \
+  --interactions ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv \
   > ~/GBA-input/interactome_human.sif
 ```
 
 If needed, `build_interactome.py` allows the user to set the min number of evidences `--n_evidence`  (default=2) and the min number of direct interactions `--n_direct` (default=1).
 
-The interactome file has 3 tab-separated columns: protein1 "pp" protein2.
-
 
 ### Seeds file
 
-Seeds must correspond to nodes in the interactome. Because the interactome contains protein IDs, causal genes provided as seeds must be mapped to protein IDs beforehand. We provide the script `causal_genes_parser.py`, which maps causal gene names to UniProt accession numbers (UniProt Primary ACs) using the parsed Uniprot file.
+Seeds must correspond to nodes in the interactome. Because the interactome contains protein IDs, causal genes provided as seeds must be mapped to protein IDs beforehand. We provide the script `causal_genes_parser.py`, which maps causal gene names to UniProt Primary ACs using an HUGO Gene Nomenclature Committee (HGNC; https://www.genenames.org) file.
 
-> [!NOTE]
-> It requires [HUGO Gene Nomenclature Committee](https://www.genenames.org) gene names.
+Download the HGNC "protein-coding gene" mapping file (available at https://www.genenames.org/download/statistics-and-files/)
 
-Create a file `causal_genes.txt` (without a header) with one causal gene name per line. Then map gene names in `causal_genes.txt` into protein IDs and save them in `causal_proteins.txt`.
+```
+wget https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/locus_groups/protein-coding_gene.txt
+```
 
+Create a file `causal_genes.txt` (without a header) with one causal gene name per line.
 
 ```
 python ~/Software/GBA-centrality/Interactome/causal_genes_parser.py \
-  --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  --causal ~/GBA-input/causal_genes.txt
+  --hgnc ~/GBA-input/protein-coding_gene.txt \
+  --causal ~/GBA-input/causal_genes.txt \
   > ~/GBA-input/causal_proteins.txt
 ```
+
+Causal proteins will be saved in `causal_proteins.txt`, one UniProt Primary AC per line. Some genes can be mapped to more than one protein when there are multiple, genuinely distinct protein products (all proteins will be saved as causal).

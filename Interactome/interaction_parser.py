@@ -104,7 +104,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
 
         for line in f:
             line_count += 1
-            line_split = line.rstrip().split("\t")
+            line_split = line.rstrip("\n").split("\t")
 
             # Uniprot AC of protein A should be in column 0,
             # otherwise it can be in alternatives (column 2) or in aliases (column 4);
@@ -203,6 +203,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
             
             # ignore non-human interactions
             if((taxID_A != "9606") or (taxID_B != "9606")):
+                logger.warning(f"Tax ID for {protein_A}:{protein_B} is {taxID_A}:{taxID_B}, skipping it")
                 continue
 
             # interaction type should be in column 11;

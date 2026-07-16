@@ -33,14 +33,17 @@ def parse_uniprot(uniprot_file):
     - Uniprot Secondary AC(s) (comma-separated)
     - tax ID
     - gene name
+    - synonyms (comma-separated)
 
     Returns:
       - gene2uniprot: dict with key=gene name, value=Uniprot Primary AC(s)
+      - synonym2uniprot: dict with key=synonym, value=Uniprot Primary AC(s)
 
     Note: more than one protein can be associated with a gene,
           then keeping all proteins associated with that gene as causal proteins
     """
     gene2uniprot = {}
+    synonym2uniprot = {}
 
     with open(uniprot_file, 'r') as f:
         # skip header
@@ -52,10 +55,10 @@ def parse_uniprot(uniprot_file):
             line_split = line.rstrip("\n").split("\t")
 
             # if some records are incomplete, die
-            if(len(line_split) != 4):
-                raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 4 tab-separated fields")
+            if(len(line_split) != 5):
+                raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 5 tab-separated fields")
 
-            (primaryAC, secondaryACs, taxID, gene) = line_split
+            (primaryAC, secondaryACs, taxID, gene, synonyms) = line_split
             # only keep human proteins
             if taxID != "9606":
                 continue
@@ -68,10 +71,20 @@ def parse_uniprot(uniprot_file):
             else:
                 gene2uniprot[gene] = [primaryAC]
 
-    return(gene2uniprot)
+            # parse synonyms
+            if synonyms == "":
+                continue
+            synonyms_split = synonyms.rstrip("\n").split(",")
+            for synonym in synonyms_split:
+                if synonym in synonym2uniprot:
+                    synonym2uniprot[synonym].append(primaryAC)
+                else:
+                    synonym2uniprot[synonym] = [primaryAC]
+
+    return(gene2uniprot, synonym2uniprot)
 
 
-def parse_causal_genes(causal_genes_file, gene2uniprot):
+def parse_causal_genes(causal_genes_file, gene2uniprot, synonym2uniprot):
     '''
     Build a list of protein Uniprot Primary AC(s) corresponding to
     causal genes from causal_genes_file
@@ -79,6 +92,7 @@ def parse_causal_genes(causal_genes_file, gene2uniprot):
     arguments:
     - causal_genes_file: filename (with path) of known causal genes, one gene name per line
     - gene2uniprot: dict with key=gene name, value=Uniprot Primary AC(s)
+    - synonym2uniprot: dict with key=synonym, value=Uniprot Primary AC(s)
 
     returns:
     - causal_proteins: list of Uniprot Primary AC(s)
@@ -97,8 +111,16 @@ def parse_causal_genes(causal_genes_file, gene2uniprot):
                 num_causal_proteins += len(gene2uniprot[gene])
                 num_found_genes += 1
             else:
-                logger.warning(f"Causal gene {gene} is not a known gene in Uniprot, fix it")
-                raise Exception(f"Unknown gene {gene} in Uniprot")
+                if gene in synonym2uniprot:
+                    logger.warning(f"Causal gene {gene} not found in gene names, but found in synonyms, keeping it")
+                    if len(synonym2uniprot[gene]) > 1:
+                        logger.warning(f"Causal gene {gene} has multiple Uniprot Primary AC(s): {synonym2uniprot[gene]}")
+                    causal_proteins.extend(synonym2uniprot[gene])
+                    num_causal_proteins += len(synonym2uniprot[gene])
+                    num_found_genes += 1
+                else:
+                    logger.warning(f"Causal gene {gene} is not a known gene in Uniprot, is it expected (eg. lncRNA/tRNA)?")
+                    continue
 
     logger.info(f"Found {num_causal_proteins} proteins, corresponding to {num_found_genes} causal genes")
 
@@ -108,10 +130,10 @@ def parse_causal_genes(causal_genes_file, gene2uniprot):
 def main(uniprot_file, causal_genes_file):
 
     logger.info("Parsing Uniprot file")
-    gene2uniprot = parse_uniprot(uniprot_file)
+    (gene2uniprot, synonym2uniprot) = parse_uniprot(uniprot_file)
 
     logger.info("Parsing causal genes")
-    causal_proteins = parse_causal_genes(causal_genes_file, gene2uniprot)
+    causal_proteins = parse_causal_genes(causal_genes_file, gene2uniprot, synonym2uniprot)
 
     logger.info("Printing protein seeds")
     for protein in causal_proteins:

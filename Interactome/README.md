@@ -13,7 +13,7 @@ cd ~/GBA-input
 
 #### Uniprot file
 
-This file will be used for for mapping between gene names, gene ENSGs and protein Uniprot IDs.
+This file will be used for for mapping between Uniprot ACs, tax IDs and gene names.
 
 Download and parse Uniprot (file size ~660Mb):
 
@@ -85,21 +85,15 @@ If needed, `build_interactome.py` allows the user to set the min number of evide
 
 ### Seeds file
 
-Seeds must correspond to nodes in the interactome. Because the interactome contains protein IDs, causal genes provided as seeds must be mapped to protein IDs beforehand. We provide the script `causal_genes_parser.py`, which maps causal gene names to UniProt Primary ACs using an HUGO Gene Nomenclature Committee (HGNC; https://www.genenames.org) file.
-
-Download the HGNC "protein-coding gene" mapping file (available at https://www.genenames.org/download/statistics-and-files/)
-
-```
-wget https://storage.googleapis.com/public-download-files/hgnc/tsv/tsv/locus_groups/protein-coding_gene.txt
-```
+Seeds must correspond to nodes in the interactome. Because the interactome contains Uniprot ACs, causal genes provided as seeds must be mapped to Uniprot Primary ACs beforehand. We provide the script `causal_genes_parser.py`, which maps causal gene names to UniProt Primary ACs using the `uniprot_parsed.tsv` file.
 
 Create a file `causal_genes.txt` (without a header) with one causal gene name per line.
 
 ```
 python ~/Software/GBA-centrality/Interactome/causal_genes_parser.py \
-  --hgnc ~/GBA-input/protein-coding_gene.txt \
+  --uniprot ~/GBA-input/uniprot_parsed.tsv \
   --causal ~/GBA-input/causal_genes.txt \
   > ~/GBA-input/causal_proteins.txt
 ```
 
-Causal proteins will be saved in `causal_proteins.txt`, one UniProt Primary AC per line. Some genes can be mapped to more than one protein when there are multiple, genuinely distinct protein products (all proteins will be saved as causal).
+Causal proteins will be saved in `causal_proteins.txt`, one UniProt Primary AC per line. It can happend that some genes are mapped to more than one protein when there are multiple, genuinely distinct protein products (in that case all proteins will be saved as causal).

@@ -35,11 +35,11 @@ def parse_uniprot_file(uniprot_file):
     - Uniprot Primary AC
     - Uniprot Secondary AC(s) (comma-separated)
     - tax ID
-    - gene name(s) (comma-separated)
+    - gene name
     """
 
     # print header to STDOUT
-    print("\t".join(["PrimaryAC", "SecondaryACs", "TaxID", "GeneNames"]))
+    print("\t".join(["PrimaryAC", "SecondaryACs", "TaxID", "GeneName"]))
 
     re_AC = re.compile(r'^AC\s+(\S.+);$')
     re_taxID = re.compile(r'^OX\s+NCBI_TaxID=([^;]+);$')
@@ -47,13 +47,10 @@ def parse_uniprot_file(uniprot_file):
     # GN data can be multi-line, parse them all and concatenate, then
     # process at end of record
     re_GN = re.compile(r'^GN\s+(\S.+)$')
-    # All gene name(s) and synonym(s) will be output together, comma-separated
-    # but without distinguishing between Name, Synonym, or even if multiple
-    # genes were listed by uniprot (with "GN  and")
+    # only gene name, but not synonym(s), will be output
 
-    # REs for extracting Name and Synonyms from concatenated GN data
+    # REs for extracting Name from concatenated GN data
     re_Name = re.compile(r'Name=([^;]+);')
-    re_Synonyms = re.compile(r'Synonyms=([^;]+);')
 
     # some Names/Synonyms/taxIDs have evidence codes, eg
     # Name=atg-18 {ECO:0000312|WormBase:F41E6.13a};
@@ -66,6 +63,7 @@ def parse_uniprot_file(uniprot_file):
     secondary_ACs = []
     taxID = ""
     gene_data = ""
+    gene_name = ""
 
     for line in uniprot_file:
         if re_AC.match(line):
@@ -90,30 +88,23 @@ def parse_uniprot_file(uniprot_file):
                 raise Exception(f"taxID {taxID} not an integer in {primary_AC}")
 
         elif line.startswith("//"):  # end of the record
-            # process gene_data: extract each name and remove ECO if present
-            genes = []
-            names = re_Name.findall(gene_data)
-            for name in names:
-                genes.append(re_removeEC.sub('', name))
-            # process symonyms in the same way
-            synonymsAll = re_Synonyms.findall(gene_data)
-            for synonyms in synonymsAll:
-                synonyms_ECremoved = re_removeEC.sub('', synonyms)
-                for synonym in synonyms_ECremoved.split(', '):
-                    synonym = synonym.strip()
-                    genes.append(synonym)
+            # process gene_data: extract name and remove ECO if present
+            if re_Name.match(gene_data):
+                name = re_Name.match(gene_data).group(1)
+                gene_name = re_removeEC.sub('', name)
 
             if (primary_AC != "" and taxID != ""):
                 out_line = [primary_AC,
                             ",".join(secondary_ACs),
                             str(taxID),
-                            ",".join(genes)]
+                            gene_name]
                 print('\t'.join(out_line))
 
             primary_AC = ""
             secondary_ACs = []
             taxID = ""
             gene_data = ""
+            gene_name = ""
 
         # sanity check: did we miss anything?
         elif line.startswith(('AC', 'OX', 'GN')):

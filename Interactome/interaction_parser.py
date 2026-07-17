@@ -34,7 +34,8 @@ def parse_uniprot_file(uniprot_file):
     - Uniprot Primary AC
     - Uniprot Secondary AC(s)
     - tax ID
-    - gene name(s)
+    - gene name
+    - synonyms (comma-separated)
 
     Returns:
     - primary2secondary: dict with key=Uniprot Primary AC,
@@ -51,9 +52,9 @@ def parse_uniprot_file(uniprot_file):
         for line in f:
             line_split = line.rstrip("\n").split("\t")
 
-            if(len(line_split) != 4):
-                logger.error(f"Uniprot file {uniprot_file} has bad line (not 4 tab-separated fields): {line}")
-                raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 4 tab-separated fields")
+            if(len(line_split) != 5):
+                logger.error(f"Uniprot file {uniprot_file} has bad line (not 5 tab-separated fields): {line}")
+                raise Exception(f"Bad line in the uniprot file {uniprot_file}, not 5 tab-separated fields")
             
             primaryAC = line_split[0]
             if line_split[1] == "":

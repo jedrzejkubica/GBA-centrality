@@ -36,9 +36,11 @@ def parse_interactions(interactions_file):
     - evidence type
 
     returns:
-    - PPI2pubmed2method
+    - PPI2pubmed2method: dictionary with key: str "protein_A:protein_B",
+        value: dictionary with key: str pubmedID, value: list of two ints: 
+        - count of evidence type "1" (direct)
+        - total count of evidences ("1" direct and "2" indirect)
     """
-
     PPI2pubmed2method = {}
     
     with open(interactions_file, 'r') as f:
@@ -49,16 +51,17 @@ def parse_interactions(interactions_file):
                 logger.error(f"Interactions file {interactions_file} has bad line (not 4 tab-separated fields): {line}")
                 raise Exception(f"Bad line in the interactions file {interactions_file}, not 4 tab-separated fields")
 
-            PPI = line_split[0] + ':' + line_split[1]  # protein_A:protein_B
+            PPI = line_split[0] + ':' + line_split[1]  # str "protein_A:protein_B"
             pubmed = line_split[2]
             evidence_type = line_split[3]
 
             if PPI not in PPI2pubmed2method:
                 PPI2pubmed2method[PPI] = {}
             if pubmed not in PPI2pubmed2method[PPI]:
-                PPI2pubmed2method[PPI][pubmed] = [0, 0]  # [# evidence type "1", # evidence type "2"]
+                PPI2pubmed2method[PPI][pubmed] = [0, 0]
             if evidence_type == "1":
                 PPI2pubmed2method[PPI][pubmed][0] += 1
+                PPI2pubmed2method[PPI][pubmed][1] += 1
             elif evidence_type == "2":
                 PPI2pubmed2method[PPI][pubmed][1] += 1
 
@@ -66,13 +69,17 @@ def parse_interactions(interactions_file):
 
 
 def main(interactions_parsed_files, n_evidence, n_direct):
-
+    # merge interactions from all interaction files (eg. BioGRID, IntAct) into one dictionary:
+    # key: str "protein_A:protein_B"
+    # value: dictionary with key: str pubmedID, value: list of two ints:
+    # - max count of evidence type "1" (direct) from any file
+    # - max total count of evidences ("1" direct and "2" indirect) from any file
     PPI2pubmed2method_merged = {}
 
     # we have multiple files, one line is an interaction with publication
     # and evidence type ("1" or "2"),
     # interactions can be redundant between files,
-    # one publication can report more than one interaction
+    # one publication (ie. pubmedID) can report more than one interaction
     for file in interactions_parsed_files:
         logger.info(f"Parsing {file}")
         PPI2pubmed2method = parse_interactions(file)
@@ -85,25 +92,22 @@ def main(interactions_parsed_files, n_evidence, n_direct):
                     if pubmed not in PPI2pubmed2method_merged[PPI]:
                         PPI2pubmed2method_merged[PPI][pubmed] = PPI2pubmed2method[PPI][pubmed].copy()
                     else:
-                        # keep evidence counts with the largest evidence type count of "1"
+                        # keep max of direct and max of total
                         if PPI2pubmed2method[PPI][pubmed][0] > PPI2pubmed2method_merged[PPI][pubmed][0]:
                             PPI2pubmed2method_merged[PPI][pubmed][0] = PPI2pubmed2method[PPI][pubmed][0]
+                        if PPI2pubmed2method[PPI][pubmed][1] > PPI2pubmed2method_merged[PPI][pubmed][1]:
                             PPI2pubmed2method_merged[PPI][pubmed][1] = PPI2pubmed2method[PPI][pubmed][1]
-                        elif PPI2pubmed2method[PPI][pubmed][0] == PPI2pubmed2method_merged[PPI][pubmed][0]:
-                            # take max of evidence type "2"
-                            if PPI2pubmed2method[PPI][pubmed][1] > PPI2pubmed2method_merged[PPI][pubmed][1]:
-                                PPI2pubmed2method_merged[PPI][pubmed][1] = PPI2pubmed2method[PPI][pubmed][1]
     
-    logger.info(f"Filtering on evidence")
+    logger.info(f"Filtering on evidence (n_evidence>={n_evidence}, n_direct>={n_direct})")
     for PPI in PPI2pubmed2method_merged:
-        # sum evidence for each interaction
-        evidence_sum = [0, 0]
+        # sum evidences for each interaction, all publications (ie. pubmedIDs) combined
+        evidence_sum = [0, 0]  # sum of direct and sum of total
         for pubmed in PPI2pubmed2method_merged[PPI]:
             evidence_sum[0] += PPI2pubmed2method_merged[PPI][pubmed][0]
             evidence_sum[1] += PPI2pubmed2method_merged[PPI][pubmed][1]
         
-        # keep interactions with at least N evidences including N direct (=="1")
-        if (evidence_sum[0] >= n_direct) and (evidence_sum[0] + evidence_sum[1] >= n_evidence):
+        # keep interactions with at least N total evidences including N direct
+        if (evidence_sum[1] >= n_evidence) and (evidence_sum[0] >= n_direct):
             (protein_A, protein_B) = PPI.split(':')
             print('\t'.join([protein_A, "pp", protein_B]))
 

@@ -83,7 +83,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
     - ignore self-interactions
     - ignore some "bad" detection methods (search for "bad" below)
     - tax ID must be human (9606)
-    - interaction type is used to ignore interactions or set evidence type ("1" or "2")
+    - interaction type is used to ignore interactions or set evidence type: "1" (direct) or "2" (indirect)
     sort alphabetically the two interactors (A:B and B:A are the same)
 
     Print to STDOUT in TSV format:

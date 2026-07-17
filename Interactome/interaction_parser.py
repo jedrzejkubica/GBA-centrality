@@ -209,15 +209,15 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
 
             # interaction type should be in column 11;
             # interaction type cannot be "bad", ie MI:0403 (colocalization),
-            # if interaction type is MI:0407 (direct interaction), evidence_type="1"
-            # otherwise evidence_type="2"
+            # if interaction type is MI:0407 (direct interaction) or MI:0915 (physical association), evidence_type="1" (direct)
+            # otherwise evidence_type="2" (indirect)
             interaction_type = ""
             evidence_type = ""
             types_split = line_split[11].split("|")  # 19/05/2026 intact and biogrid only store one type
             for type in types_split:
                 if(re_psimi.match(type)):
                     interaction_type = re_psimi.match(type).group(1)
-                    if(interaction_type == "MI:0407"):
+                    if(interaction_type == "MI:0407" or interaction_type == "MI:0915"):
                         evidence_type = "1"
                         break
                     elif(interaction_type != "MI:0403"):

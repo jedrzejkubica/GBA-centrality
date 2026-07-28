@@ -28,12 +28,12 @@ import data_parser
 # set up logger, using inherited config, in case we get called as a module
 logger = logging.getLogger(__name__)
 
-# SCORETYPE has to be identical to SCORETYPE in GBA-centrality-C/scores.h
+# SCORETYPE has to be identical to SCORETYPE in BFWalk-C/scores.h
 SCORETYPE = ctypes.c_float
 
 
-# following classes must match those in GBA-centrality-C/network.h and
-# GBA-centrality-C/scores.h
+# following classes must match those in BFWalk-C/network.h and
+# BFWalk-C/scores.h
 class Edge(ctypes.Structure):
     _fields_ = [('source', ctypes.c_uint),
                 ('dest', ctypes.c_uint),
@@ -63,7 +63,7 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     - seeds: list of floats of length num_nodes, value=1 if node in seeds and 0 otherwise
     - alpha: attenuation coefficient (parameter set by user)
     - cacheFile: None (don't build or use a cache), or ASCII string holding a filename (with
-      path) to use as cache for gbaCentrality(), cachefile will be created on the first
+      path) to use as cache for bfwalk(), cachefile will be created on the first
       run and used in any subsequent runs. The cache can be reused as long as the network
       and alpha remain the same, if you change the network you must use a different cacheFile.
     - threads: number of threads to use, 0 to use all available cores
@@ -73,17 +73,17 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     '''
     if threads:
         os.environ['OMP_NUM_THREADS'] = str(threads)
-    so_file = pathToCode + "/GBA-centrality-C/gbaCentrality.so"
-    gbaLibrary = ctypes.CDLL(so_file)
+    so_file = pathToCode + "/BFWalk-C/bfwalk.so"
+    bfwalkLibrary = ctypes.CDLL(so_file)
     # declare function signature
-    gbaLibrary.gbaCentrality.argtypes = [
+    bfwalkLibrary.bfwalkCentrality.argtypes = [
         ctypes.POINTER(Network),
         ctypes.POINTER(nodeScores),
         ctypes.c_float,
         ctypes.POINTER(nodeScores),
         ctypes.c_char_p
     ]
-    gbaLibrary.gbaCentrality.restype = None
+    bfwalkLibrary.bfwalkCentrality.restype = None
 
     # cacheFile as C char*, NULL if not requested
     cacheFileC = None
@@ -128,7 +128,7 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     scores = nodeScores(ctypes.c_size_t(len(node2idx)),
                         scoresData)
 
-    gbaLibrary.gbaCentrality(
+    bfwalkLibrary.bfwalkCentrality(
         ctypes.byref(N),
         ctypes.byref(seeds_vector),
         ctypes.c_float(alpha),
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog=script_name,
         description="""
-        GBA centrality is a network propagation algorithm
+        BFWalk is a network propagation algorithm
         based on non-backtracking walks and in-degree normalization.
         It assigns scores to nodes in the network that represent
         their proximity to a given list of nodes of interest (seeds).

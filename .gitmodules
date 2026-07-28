@@ -1,4 +1,4 @@
-[submodule "GBA-centrality-C"]
-	path = GBA-centrality-C
-	url = https://github.com/jedrzejkubica/GBA-centrality-C.git
+[submodule "BFWalk-C"]
+	path = BFWalk-C
+	url = git@github.com:jedrzejkubica/BFWalk-C.git
 	branch = main

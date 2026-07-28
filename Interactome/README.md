@@ -4,11 +4,11 @@
 
 Below we provide instructions for interactome-based disease gene prioritization. We provide scripts and commands to: download and parse protein-protein interaction data, build a human interactome, and create a file with seeds (i.e. disease-associated genes/proteins).
 
-We assume that the `GBA-centrality/` repository is in `~/Software/`, and that data will be downloaded into `~/GBA-input`. If needed, adapt the commands below to your taste.
+We assume that the `BFWalk/` repository is in `~/Software/`, and that data will be downloaded into `~/BFWalk-input`. If needed, adapt the commands below to your taste.
 
 ```
-mkdir ~/GBA-input
-cd ~/GBA-input
+mkdir ~/BFWalk-input
+cd ~/BFWalk-input
 ```
 
 #### Uniprot file
@@ -19,7 +19,7 @@ Download and parse Uniprot (file size ~660Mb):
 
 ```
 wget https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz
-gunzip -c uniprot_sprot.dat.gz | python ~/Software/GBA-centrality/Interactome/uniprot_parser.py > uniprot_parsed.tsv
+gunzip -c uniprot_sprot.dat.gz | python ~/Software/BFWalk/Interactome/uniprot_parser.py > uniprot_parsed.tsv
 ```
 
 
@@ -51,21 +51,21 @@ The PPI data will be filtered on "Interaction Detection Method", ie. ignore some
 Parse BioGRID
 
 ```
-python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt \
-  --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  1> ~/GBA-input/interactions_Biogrid.tsv \
-  2> ~/GBA-input/interactions_Biogrid.log
+python ~/Software/BFWalk/Interactome/interaction_parser.py \
+  --interactions ~/BFWalk-input/BIOGRID-ORGANISM-Homo_sapiens\*.mitab.txt \
+  --uniprot ~/BFWalk-input/uniprot_parsed.tsv \
+  1> ~/BFWalk-input/interactions_Biogrid.tsv \
+  2> ~/BFWalk-input/interactions_Biogrid.log
 ```
 
 Parse IntAct
 
 ```
-python ~/Software/GBA-centrality/Interactome/interaction_parser.py \
-  --interactions ~/GBA-input/intact.txt \
-  --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  1> ~/GBA-input/interactions_Intact.tsv \
-  2> ~/GBA-input/interactions_Intact.log
+python ~/Software/BFWalk/Interactome/interaction_parser.py \
+  --interactions ~/BFWalk-input/intact.txt \
+  --uniprot ~/BFWalk-input/uniprot_parsed.tsv \
+  1> ~/BFWalk-input/interactions_Intact.tsv \
+  2> ~/BFWalk-input/interactions_Intact.log
 ```
 
 
@@ -75,9 +75,9 @@ The interactome will be saved in a file format similar to SIF (https://cytoscape
 with 3 tab-separated columns: protein1 "pp" protein2.
 
 ```
-python ~/Software/GBA-centrality/Interactome/build_interactome.py \
-  --interactions ~/GBA-input/interactions_Biogrid.tsv ~/GBA-input/interactions_Intact.tsv \
-  > ~/GBA-input/interactome_human.sif
+python ~/Software/BFWalk/Interactome/build_interactome.py \
+  --interactions ~/BFWalk-input/interactions_Biogrid.tsv ~/BFWalk-input/interactions_Intact.tsv \
+  > ~/BFWalk-input/interactome_human.sif
 ```
 
 If needed, `build_interactome.py` allows the user to set the min number of evidences `--n_evidence`  (default=2) and the min number of direct interactions `--n_direct` (default=1).
@@ -90,10 +90,10 @@ Seeds must correspond to nodes in the interactome. Because the interactome conta
 Create a file `causal_genes.txt` (without a header) with one causal gene name per line.
 
 ```
-python ~/Software/GBA-centrality/Interactome/causal_genes_parser.py \
-  --uniprot ~/GBA-input/uniprot_parsed.tsv \
-  --causal ~/GBA-input/causal_genes.txt \
-  > ~/GBA-input/causal_proteins.txt
+python ~/Software/BFWalk/Interactome/causal_genes_parser.py \
+  --uniprot ~/BFWalk-input/uniprot_parsed.tsv \
+  --causal ~/BFWalk-input/causal_genes.txt \
+  > ~/BFWalk-input/causal_proteins.txt
 ```
 
 Causal proteins will be saved in `causal_proteins.txt`, one UniProt Primary AC per line. It can happend that some genes are mapped to more than one protein when there are multiple, genuinely distinct protein products (in that case all proteins will be saved as causal).

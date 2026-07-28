@@ -76,14 +76,14 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     so_file = pathToCode + "/BFWalk-C/bfwalk.so"
     bfwalkLibrary = ctypes.CDLL(so_file)
     # declare function signature
-    bfwalkLibrary.bfwalkCentrality.argtypes = [
+    bfwalkLibrary.bfwalk.argtypes = [
         ctypes.POINTER(Network),
         ctypes.POINTER(nodeScores),
         ctypes.c_float,
         ctypes.POINTER(nodeScores),
         ctypes.c_char_p
     ]
-    bfwalkLibrary.bfwalkCentrality.restype = None
+    bfwalkLibrary.bfwalk.restype = None
 
     # cacheFile as C char*, NULL if not requested
     cacheFileC = None
@@ -128,7 +128,7 @@ def calculate_scores(network, node2idx, seeds, alpha, cacheFile, pathToCode, thr
     scores = nodeScores(ctypes.c_size_t(len(node2idx)),
                         scoresData)
 
-    bfwalkLibrary.bfwalkCentrality(
+    bfwalkLibrary.bfwalk(
         ctypes.byref(N),
         ctypes.byref(seeds_vector),
         ctypes.c_float(alpha),

@@ -8,7 +8,7 @@ BFWalk is a new network propagation algorithm based on non-backtracking walks an
 
 ## Install BFWalk
 
-This repository requires [BFWalk-C](https://github.com/jedrzejkubica/BFWalk-C), because `BFWalk.py` uses a BFWalk-C shared object (.so file) for heavy-lifting calculations. You therefore need to install the [BFWalk dependencies](https://github.com/jedrzejkubica/BFWalk-C#dependencies). Then set up BFWalk with the following commands:
+This repository requires [BFWalk-C](https://github.com/jedrzejkubica/BFWalk-C), because `BFWalk.py` uses a BFWalk-C shared object (.so file) for heavy-lifting calculations. You therefore need to install the [BFWalk-C dependencies](https://github.com/jedrzejkubica/BFWalk-C#dependencies). Then set up BFWalk with the following commands:
 
 ```
 git clone --recurse-submodules https://github.com/jedrzejkubica/BFWalk.git

@@ -102,83 +102,14 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
         header = f.readline()
 
         line_count = 0
+        count_non_human = 0
+        count_no_AC = 0
+        count_bad_method = 0
+        count_bad_type = 0
 
         for line in f:
             line_count += 1
             line_split = line.rstrip("\n").split("\t")
-
-            # Uniprot AC of protein A should be in column 0,
-            # otherwise it can be in alternatives (column 2) or in aliases (column 4);
-            # for protein B, Uniprot AC should be in column 1,
-            # otherwise it can be in alternatives (column 3) or in aliases (column 5)
-            protein_A = ""
-            potentials = [line_split[0]] + line_split[2].split("|") + line_split[4].split("|")
-            for potential in potentials:
-                if(re_uniprot.match(potential)):
-                    protein_A = re_uniprot.match(potential).group(2)  # second parenthesized group in re_uniprot
-                    # check if it is a valid primary AC
-                    if(protein_A in primary2secondary):
-                        break
-                    if(protein_A in secondary2primary):
-                        # if it is a secondary AC, keep the first primary AC associated to it
-                        protein_A = secondary2primary[protein_A][0]
-                        break
-                    else:
-                        protein_A = ""
-            if(protein_A == ""):
-                logger.warning(f"Uniprot AC not found at line {line_count}, skipping it")
-                continue
-
-            # interactor B
-            protein_B = ""
-            potentials = [line_split[1]] + line_split[3].split("|") + line_split[5].split("|")
-            for potential in potentials:
-                if(re_uniprot.match(potential)):
-                    protein_B = re_uniprot.match(potential).group(2)
-                    # check if it is a valid primary AC
-                    if(protein_B in primary2secondary):
-                        break
-                    if(protein_B in secondary2primary):
-                        # if it is a secondary AC, keep the first primary AC associated to it
-                        protein_B = secondary2primary[protein_B][0]
-                        break
-                    else:
-                        protein_B = ""
-            if(protein_B == ""):
-                logger.warning(f"Uniprot AC not found at line {line_count}, skipping it")
-                continue
-            
-            # ignore self-interactions
-            if(protein_B == protein_A):
-                continue
-
-            # interaction detection methods should be in column 6;
-            # detection method cannot be "bad": MI:0254 (genetic interference) or
-            # MI:0686 (unspecified method)
-            method = ""
-            methods_split = line_split[6].split("|")
-            for met in methods_split:
-                if(re_psimi.match(met)):
-                    method = re_psimi.match(met).group(1)
-                    if(method in ["MI:0254", "MI:0686"]):
-                        method = ""
-                        continue
-                    else:
-                        break
-            if(method == ""):
-                logger.warning(f"Detection method for {protein_A}:{protein_B} not found or bad method, skipping it")
-                continue
-
-            # pubmed ID should be in column 8
-            pubmed = ""
-            pub_split = line_split[8].split("|")
-            for pub in pub_split:
-                if(re_pubmed.match(pub)):
-                    pubmed = re_pubmed.match(pub).group(1)
-                    break
-            if(pubmed == ""):
-                logger.warning(f"Pubmed ID not found at line {line_count}, skipping it")
-                continue
 
             # tax ID for protein A should be in column 9, tax ID for protein B should be in column 10
             # both proteins should be human ("9606")
@@ -204,7 +135,80 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
             
             # ignore non-human interactions
             if((taxID_A != "9606") or (taxID_B != "9606")):
-                logger.warning(f"Tax ID for {protein_A}:{protein_B} is {taxID_A}:{taxID_B}, skipping it")
+                count_non_human += 1
+                continue
+
+            # pubmed ID should be in column 8
+            pubmed = ""
+            pub_split = line_split[8].split("|")
+            for pub in pub_split:
+                if(re_pubmed.match(pub)):
+                    pubmed = re_pubmed.match(pub).group(1)
+                    break
+            if(pubmed == ""):
+                logger.warning(f"Pubmed ID not found at line {line_count}, skipping it")
+                continue
+
+            # Uniprot AC of protein A should be in column 0,
+            # otherwise it can be in alternatives (column 2) or in aliases (column 4);
+            # for protein B, Uniprot AC should be in column 1,
+            # otherwise it can be in alternatives (column 3) or in aliases (column 5)
+            protein_A = ""
+            potentials = [line_split[0]] + line_split[2].split("|") + line_split[4].split("|")
+            for potential in potentials:
+                if(re_uniprot.match(potential)):
+                    protein_A = re_uniprot.match(potential).group(2)  # second parenthesized group in re_uniprot
+                    # check if it is a valid primary AC
+                    if(protein_A in primary2secondary):
+                        break
+                    if(protein_A in secondary2primary):
+                        # if it is a secondary AC, keep the first primary AC associated to it
+                        protein_A = secondary2primary[protein_A][0]
+                        break
+                    else:
+                        protein_A = ""
+            if(protein_A == ""):
+                count_no_AC += 1
+                continue
+
+            # interactor B
+            protein_B = ""
+            potentials = [line_split[1]] + line_split[3].split("|") + line_split[5].split("|")
+            for potential in potentials:
+                if(re_uniprot.match(potential)):
+                    protein_B = re_uniprot.match(potential).group(2)
+                    # check if it is a valid primary AC
+                    if(protein_B in primary2secondary):
+                        break
+                    if(protein_B in secondary2primary):
+                        # if it is a secondary AC, keep the first primary AC associated to it
+                        protein_B = secondary2primary[protein_B][0]
+                        break
+                    else:
+                        protein_B = ""
+            if(protein_B == ""):
+                count_no_AC += 1
+                continue
+            
+            # ignore self-interactions
+            if(protein_B == protein_A):
+                continue
+
+            # interaction detection methods should be in column 6;
+            # detection method cannot be "bad": MI:0254 (genetic interference) or
+            # MI:0686 (unspecified method)
+            method = ""
+            methods_split = line_split[6].split("|")
+            for met in methods_split:
+                if(re_psimi.match(met)):
+                    method = re_psimi.match(met).group(1)
+                    if(method in ["MI:0254", "MI:0686"]):
+                        method = ""
+                        continue
+                    else:
+                        break
+            if(method == ""):
+                count_bad_method += 1
                 continue
 
             # interaction type should be in column 11;
@@ -224,7 +228,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                         evidence_type = "2"
                         break
             if(evidence_type == ""):
-                logger.warning(f"Interaction type for {protein_A}:{protein_B} not found or bad type, skipping it")
+                count_bad_type += 1
                 continue
 
             # sort alphabetically
@@ -234,6 +238,10 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                 protein_B = temp
 
             print("\t".join([protein_A, protein_B, pubmed, evidence_type]))
+    logger.warning(f"Skipped {count_non_human} non-human interactions")
+    logger.warning(f"Skipped {count_no_AC} interactions without Uniprot ACs")
+    logger.warning(f"Skipped bad detection method for {count_bad_method} interactions")
+    logger.warning(f"Skipped bad type for {count_bad_type} interactions")
 
 
 def main(interaction_file, uniprot_file):

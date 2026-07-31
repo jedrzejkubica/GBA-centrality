@@ -72,7 +72,7 @@ def parse_uniprot_file(uniprot_file):
     return(primary2secondary, secondary2primary)
 
 
-def parse_interaction_file(interaction_file, primary2secondary, secondary2primary):
+def parse_interaction_file(interaction_file, primary2secondary, secondary2primary, physical):
     """
     Parse a miTAB 2.5 or 2.7 file.
 
@@ -107,6 +107,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
         count_no_AC = 0
         count_bad_method = 0
         count_bad_type = 0
+        count_interactions = 0
 
         for line in f:
             line_count += 1
@@ -214,20 +215,29 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
 
             # interaction type should be in column 11;
             # interaction type cannot be "bad", ie MI:0403 (colocalization),
-            # if interaction type is MI:0407 (direct interaction) or MI:0915 (physical association), evidence_type="1" (direct)
-            # otherwise evidence_type="2" (indirect)
+            # if physical=True, then
+            # interaction type MI:0407 (direct interaction) and MI:0915 (physical association) 
+            # are assinegd evidence_type="1" (direct), other types evidence_type="2" (indirect)
+            # if physical=False, then only interaction type MI:0407 (direct interaction)
+            # is assinegd evidence_type="1" (direct), other types evidence_type="2" (indirect)
             interaction_type = ""
             evidence_type = ""
             types_split = line_split[11].split("|")  # 19/05/2026 intact and biogrid only store one type
             for type in types_split:
                 if(re_psimi.match(type)):
                     interaction_type = re_psimi.match(type).group(1)
-                    if(interaction_type == "MI:0407" or interaction_type == "MI:0915"):
+                    if physical:
+                        if(interaction_type == "MI:0407" or interaction_type == "MI:0915"):
+                            evidence_type = "1"
+                            break
+                    if(interaction_type == "MI:0407"):
                         evidence_type = "1"
                         break
                     elif(interaction_type != "MI:0403"):
                         evidence_type = "2"
                         break
+
+
             if(evidence_type == ""):
                 count_bad_type += 1
                 continue
@@ -239,20 +249,22 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                 protein_B = temp
 
             print("\t".join([protein_A, protein_B, pubmed, evidence_type]))
-    logger.warning(f"Skipped {count_non_human} non-human interactions")
-    logger.warning(f"Skipped {count_no_AC} interactions without Uniprot ACs")
-    logger.warning(f"Skipped {count_no_pubmed} interactions without Pubmed ID")
-    logger.warning(f"Skipped bad detection method for {count_bad_method} interactions")
-    logger.warning(f"Skipped bad type for {count_bad_type} interactions")
+            count_interactions += 1
+    logger.info(f"Skipped {count_non_human} non-human interactions")
+    logger.info(f"Skipped {count_no_AC} interactions without Uniprot ACs")
+    logger.info(f"Skipped {count_no_pubmed} interactions without Pubmed ID")
+    logger.info(f"Skipped bad detection method for {count_bad_method} interactions")
+    logger.info(f"Skipped bad type for {count_bad_type} interactions")
+    logger.info(f"Found {count_interactions} interactions")
 
 
-def main(interaction_file, uniprot_file):
+def main(interaction_file, uniprot_file, physical=False):
 
     logger.info("Parsing uniprot file")
     (primary2secondary, secondary2primary) = parse_uniprot_file(uniprot_file)
 
     logger.info("Parsing interaction file")
-    parse_interaction_file(interaction_file, primary2secondary, secondary2primary)
+    parse_interaction_file(interaction_file, primary2secondary, secondary2primary, physical)
 
     logger.info("Done!")
 
@@ -281,11 +293,15 @@ if __name__ == "__main__":
 
     parser.add_argument('--interactions', required=True)
     parser.add_argument('--uniprot', required=True)
+    parser.add_argument('--physical',
+                        help="Whether MI:0915 (physical association) is assigned evidence type 1 (default: False)",
+                        action='store_true',
+                        required=False)
 
     args = parser.parse_args()
 
     try:
-        main(interaction_file=args.interactions, uniprot_file=args.uniprot)
+        main(interaction_file=args.interactions, uniprot_file=args.uniprot, physical=args.physical)
     except Exception as e:
         # details on the issue should be in the exception name, print it to stderr and die
         sys.stderr.write("ERROR in " + script_name + " : " + repr(e) + "\n")

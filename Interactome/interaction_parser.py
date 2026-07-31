@@ -103,6 +103,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
 
         line_count = 0
         count_non_human = 0
+        count_no_pubmed = 0
         count_no_AC = 0
         count_bad_method = 0
         count_bad_type = 0
@@ -120,7 +121,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                     taxID_A = re_taxID.match(tax).group(1)
                     break
             if(taxID_A == ""):
-                logger.warning(f"Tax ID not found at line {line_count}, skipping it")
+                count_non_human += 1
                 continue
 
             taxID_B = ""
@@ -130,7 +131,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                     taxID_B = re_taxID.match(tax).group(1)
                     break
             if(taxID_B == ""):
-                logger.warning(f"Tax ID not found at line {line_count}, skipping it")
+                count_non_human += 1
                 continue
             
             # ignore non-human interactions
@@ -146,7 +147,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
                     pubmed = re_pubmed.match(pub).group(1)
                     break
             if(pubmed == ""):
-                logger.warning(f"Pubmed ID not found at line {line_count}, skipping it")
+                count_no_pubmed += 1
                 continue
 
             # Uniprot AC of protein A should be in column 0,
@@ -240,6 +241,7 @@ def parse_interaction_file(interaction_file, primary2secondary, secondary2primar
             print("\t".join([protein_A, protein_B, pubmed, evidence_type]))
     logger.warning(f"Skipped {count_non_human} non-human interactions")
     logger.warning(f"Skipped {count_no_AC} interactions without Uniprot ACs")
+    logger.warning(f"Skipped {count_no_pubmed} interactions without Pubmed ID")
     logger.warning(f"Skipped bad detection method for {count_bad_method} interactions")
     logger.warning(f"Skipped bad type for {count_bad_type} interactions")
 
